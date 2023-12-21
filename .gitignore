@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# VSCode files
+.vscode
+
+# Build files
+build/
+
+# Images
+*.png
+*.jpeg
+*.pbm
