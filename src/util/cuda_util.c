@@ -1,6 +1,6 @@
 #include <cuda_runtime_api.h>
 #include "cuda_util.h"
-#include "../logger.h"
+#include "logger.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -50,9 +50,11 @@ sSMtoArchName nGpuArchNameSM[] = {
 };
 
 void checkCudaErrors(cudaError_t error) {
-    char buffer[50];
-    snprintf(buffer, 50, "CUDA error: code=%d(%s)\n", (unsigned int) error, cudaGetErrorName(error));
-    logger_send(buffer, ERROR);
+    if(cudaSuccess != error) {
+        char buffer[50];
+        snprintf(buffer, 50, "CUDA error: code=%d(%s)\n", (unsigned int) error, cudaGetErrorName(error));
+        logger_send(buffer, ERROR);
+    }
 }
 
 int _ConvertSMVer2Cores(int major, int minor) {
@@ -124,7 +126,8 @@ int gpuGetMaxGflopsDeviceId() {
             } else {
                 sm_per_multiproc = _ConvertSMVer2Cores(major,  minor);
             }
-            int multiProcessorCount = 0, clockRate = 0;
+            int multiProcessorCount = 0;
+            int clockRate = 0;
             checkCudaErrors(cudaDeviceGetAttribute(&multiProcessorCount, cudaDevAttrMultiProcessorCount, current_device));
             cudaError_t result = cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, current_device);
             if (result != cudaSuccess) {
@@ -164,6 +167,7 @@ bool cuda_init() {
     int minor = 0;
     checkCudaErrors(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device_id));
     checkCudaErrors(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device_id));
-    snprintf(success_message, 100, "GPU Device %d: \"%s\" with compute capability %d.%d\n\n", device_id, _ConvertSMVer2ArchName(major, minor), major, minor);
+    snprintf(success_message, 100, "Found GPU Device %d! \"%s\" with compute capability %d.%d\n\n", device_id, _ConvertSMVer2ArchName(major, minor), major, minor);
     logger_send(success_message, INFO);
+    return true;
 }

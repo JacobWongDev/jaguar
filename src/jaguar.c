@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include "logger.h"
-#include "cuda/cuda_util.h"
+#include "util/logger.h"
+#include "util/cuda_util.h"
+#include "util/pgm_util.h"
 
 /**
  * @brief Prints banner and performs various system checks.
@@ -22,6 +23,7 @@ bool init() {
             fwrite(line, nread, 1, stdout);
         }
         free(line);
+        line = NULL;
         fclose(banner_file);
     } else {
         logger_send("Couldn't open banner file!", ERROR);
@@ -40,7 +42,18 @@ bool init() {
  */
 int main(int argc, char* argv[]) {
     if(init()) {
-        //TODO
+        pgm_image* image = load_image("Lenna.pgm");
+        if(image != NULL) {
+            for(int i = 0; i < image->height; i++) {
+                for(int j = 0; j < image->width; j++) {
+                    fprintf(stdout, "%d ", image->intensity[i * image->width + j]);
+                }
+                fprintf(stdout, "\n");
+            }
+        } else {
+            return EXIT_FAILURE;
+        }
+        free_image(image);
         return EXIT_SUCCESS;
     } else {
         return EXIT_FAILURE;
