@@ -4,10 +4,11 @@ set(CMAKE_C_STANDARD 23)
 
 # Source Files
 set(SOURCE_FILES
-    jaguar.c
+    jaguar.cu
     util/logger.c
     util/cuda_util.c
     util/pgm_util.c
+    training/training.cu
 )
 
 # Header Files
