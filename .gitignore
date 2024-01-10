@@ -41,3 +41,9 @@ build/
 *.png
 *.jpeg
 *.pbm
+
+# Temporary files
+temp
+
+# TODO: Remove from .gitignore in future once docs are finished.
+docs
