@@ -162,8 +162,8 @@ __global__ void cosq(float* dst, float* src, int pitch, int num_bits, int levels
   nullify(roots, BLOCK_SIZE2);
   cell regions[BLOCK_SIZE2]; // regions contain the actual values and pointers to next in list.
   float threshold = 0.01;
-  src += blockIdx.y*pitch + BLOCK_SIZE*blockIdx.x;
-  dst += blockIdx.y*pitch + BLOCK_SIZE*blockIdx.x;
+  src += BLOCK_SIZE*blockIdx.y*pitch + BLOCK_SIZE*blockIdx.x;
+  dst += BLOCK_SIZE*blockIdx.y*pitch + BLOCK_SIZE*blockIdx.x;
   //setup regions
   int k = 0;
   for(int i = 0; i < BLOCK_SIZE; i++) {
