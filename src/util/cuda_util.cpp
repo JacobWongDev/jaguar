@@ -1,6 +1,7 @@
 #include <cuda_runtime_api.h>
-#include "cuda_util.h"
-#include "logger.h"
+#include <cuda_runtime.h>
+#include "cuda_util.hpp"
+#include "logger.hpp"
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -49,10 +50,10 @@ sSMtoArchName nGpuArchNameSM[] = {
     {-1, "Graphics Device"}
 };
 
-void checkCudaErrors(cudaError_t error) {
+void check(cudaError_t error, const char* file, int line) {
     if(cudaSuccess != error) {
-        char buffer[50];
-        snprintf(buffer, 50, "CUDA error: code=%d(%s)\n", (unsigned int) error, cudaGetErrorName(error));
+        char buffer[500];
+        snprintf(buffer, 500, "CUDA error in %s: line %d code=%d(%s): %s\n", file, line, (unsigned int) error, cudaGetErrorName(error), cudaGetErrorString(error));
         logger_send(buffer, ERROR);
     }
 }
@@ -158,16 +159,25 @@ int gpuGetMaxGflopsDeviceId() {
 }
 
 bool cuda_init() {
+    struct cudaDeviceProp properties;
     int device_id = gpuGetMaxGflopsDeviceId();
-    char success_message[100];
+    char success_message[1000];
     if (device_id == -1)
         return false;
     checkCudaErrors(cudaSetDevice(device_id));
     int major = 0;
     int minor = 0;
+    size_t device_heap_size = (size_t) 2 << 31;
+    checkCudaErrors(cudaDeviceSetLimit(cudaLimitMallocHeapSize, device_heap_size));
     checkCudaErrors(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device_id));
     checkCudaErrors(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device_id));
-    snprintf(success_message, 100, "Found GPU Device %d! \"%s\" with compute capability %d.%d\n\n", device_id, _ConvertSMVer2ArchName(major, minor), major, minor);
+    snprintf(success_message, 1000, "Found GPU Device %d! \"%s\" with compute capability %d.%d\n\n", device_id, _ConvertSMVer2ArchName(major, minor), major, minor);
+    logger_send(success_message, INFO);
+    checkCudaErrors(cudaGetDeviceProperties(&properties, device_id));
+    snprintf(success_message, 1000, "Device Properties:\nName = %s\nTotal Global memory = %fGB\nMultiprocessors = %d",
+        properties.name,
+        (double) properties.totalGlobalMem * 0.000000001,
+        properties.multiProcessorCount);
     logger_send(success_message, INFO);
     return true;
 }

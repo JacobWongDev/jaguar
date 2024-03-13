@@ -1,9 +1,8 @@
-#pragma once
-#include <device_launch_parameters.h>
-#include <cuda_runtime_api.h>
-#include "common.h"
+#include <random>
+#include <iostream>
 
-#define ERROR_PROBABILITY 0.1
+#define TRAINING_SIZE 1000000
+#define MAX_CODEBOOK_SIZE 256
 
 struct quantizer_cell {
   struct quantizer_cell* next;
@@ -12,9 +11,45 @@ struct quantizer_cell {
 
 typedef struct quantizer_cell cell;
 
-__device__ void nullify(cell** arr, int length) {
+void nullify(cell** arr, int length) {
   for(int i = 0; i < length; i++)
     arr[i] = NULL;
+}
+
+/**
+ * Return an array of size TRAINING_SIZE containing values distributed according to N(0,1)
+*/
+float* generate_normal_sequence() {
+    float* normal_sequence = (float*) malloc(TRAINING_SIZE * sizeof(float));
+    std::default_random_engine rng;
+    rng.seed(31);
+    std::normal_distribution<float> distribution(0, 1);
+    for(int i = 0; i < TRAINING_SIZE; i++) {
+        normal_sequence[i] = distribution(rng);
+    }
+    return normal_sequence;
+}
+
+/**
+ * Return an array of size TRAINING_SIZE containing values distributed according to L(0, 1/4)
+ *
+ * https://www.math.wm.edu/~leemis/chart/UDR/PDFs/ExponentialLaplace.pdf
+ * https://digitalcommons.usf.edu/cgi/viewcontent.cgi?article=3442&context=etd
+ *
+ * Can generate such a pdf using two independent exponentials A, B with parameters a = 1/sqrt(2), b = sqrt(2) - 1/sqrt(2)
+ * where Y (laplacian pdf) = A - B
+*/
+float* generate_laplacian_sequence() {
+    float* laplacian_sequence = (float*) malloc(TRAINING_SIZE * sizeof(float));
+    std::exponential_distribution<float> x(sqrt(2));
+    std::exponential_distribution<float> y(sqrt(2));
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    gen.seed(31);
+    for(int i = 0; i < TRAINING_SIZE; i++) {
+        laplacian_sequence[i] = x(gen) - y(gen);
+    }
+    return laplacian_sequence;
 }
 
 /**
@@ -24,7 +59,7 @@ __device__ void nullify(cell** arr, int length) {
  * @param b
  * @return float
  */
-__device__ float error(float a, float b) {
+float error(float a, float b) {
   return (a - b) * (a - b);
 }
 
@@ -32,18 +67,15 @@ __device__ float error(float a, float b) {
  * @brief Channel error probability for the Binary Symmetric Channel.
  *
  */
-__device__ float channel_error(int a, int b, int num_bits) {
+float channel_error(int a, int b, int num_bits) {
   int x = a ^ b;
   int count = 0; // number of bits that differ
+  float p = 0; // probability of error
   while (x) {
     count += x & 1;
     x >>= 1;
   }
-  return powf(ERROR_PROBABILITY, count) * powf(1-ERROR_PROBABILITY, num_bits - count);
-  // if(a == b)
-  //   return 1;
-  // else
-  //   return 0;
+  return pow(p, count) * pow(1-p, num_bits - count);
 }
 
 /**
@@ -53,15 +85,18 @@ __device__ float channel_error(int a, int b, int num_bits) {
  * @param regions
  * @return float
  */
-__device__ void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions, int training_size, int num_bits) {
+void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions, int training_size, int num_bits) {
   float min = __FLT_MAX__;
   int min_index = -1;
   float sum = 0;
   cell* previous[MAX_CODEBOOK_SIZE];
   nullify(previous, levels);
   for(int i = 0; i < training_size; i++) {
+    // printf("Iteration %d\n", i);
     for(int l = 0; l < levels; l++) {
       for(int j = 0; j < levels; j++) {
+        // if(l == j)
+        //     sum += error(*(regions[i].value), codebook[j]);
         sum += channel_error(j, l, num_bits) * error(*(regions[i].value), codebook[j]);
       }
       if(sum < min) {
@@ -93,7 +128,7 @@ __device__ void nearest_neighbour(float* codebook, cell** roots, int levels, cel
  * @param codebook
  * @return float
  */
-__device__ void centroid(cell** roots, float* codebook, int levels, int num_bits) {
+void centroid(cell** roots, float* codebook, int levels, int num_bits) {
   float numerator = 0;
   float denominator = 0;
   float partition_sum = 0;
@@ -139,7 +174,7 @@ __device__ void centroid(cell** roots, float* codebook, int levels, int num_bits
  * @param codebook
  * @return float
  */
-__device__ float distortion(int levels, int num_bits, cell** roots, float* codebook, int training_size) {
+float distortion(int levels, int num_bits, cell** roots, float* codebook, int training_size) {
   float d = 0;
   cell* traversal = NULL;
   for(int i = 0; i < levels; i++) {
@@ -154,51 +189,28 @@ __device__ float distortion(int levels, int num_bits, cell** roots, float* codeb
   return d / training_size;
 }
 
-namespace simple {
-  __global__ void cosq(
-      unsigned int * bit_allocations,
-      float* normal_sequence,
-      float* laplacian_sequence,
-      float* device_quantizers,
-      int quantizers_pitch,
-      cell* device_regions,
-      int regions_pitch) {
-    int num_bits = bit_allocations[blockIdx.x];
+void cosq(
+        float* normal_sequence,
+        int num_bits) {
     int levels = 1 << num_bits;
     float current_distortion = 0;
     float previous_distortion = 0;
     float codebook[MAX_CODEBOOK_SIZE]; // we will only use indexes up to int levels.
-    cell* roots[MAX_CODEBOOK_SIZE];
-    cell* regions = &device_regions[regions_pitch * blockIdx.x];
-    float* quantizers = &device_quantizers[quantizers_pitch * blockIdx.x];
+    cell* roots[MAX_CODEBOOK_SIZE];  // roots is used to point to the beginning of the linked list.
+    cell* regions = (cell*) malloc(sizeof(cell) * TRAINING_SIZE);
     nullify(roots, MAX_CODEBOOK_SIZE);
     float threshold = 0.01;
-    if(blockIdx.x == 0) {
-      // normal quantizer
-      //setup regions
-      for(int i = 0; i < TRAINING_SIZE; i++) {
+    // normal quantizer
+    //setup regions
+    for(int i = 0; i < TRAINING_SIZE; i++) {
         regions[i].value = &normal_sequence[i];
         regions[i].next = NULL;
-      }
-      // initialize codebook
-      // Use first N training points as initial codebook.
-      for(int i = 0; i < levels; i++) {
-        codebook[i] = normal_sequence[i];
-      }
-    } else {
-      // laplacian quantizer
-      //setup regions
-      for(int i = 0; i < TRAINING_SIZE; i++) {
-        regions[i].value = &laplacian_sequence[i];
-        regions[i].next = NULL;
-      }
-      // initialize codebook
-      // Use first N training points as initial codebook.
-      for(int i = 0; i < levels; i++) {
-        codebook[i] = laplacian_sequence[i];
-      }
     }
-
+    // initialize codebook
+    // Use first N training points as initial codebook.
+    for(int i = 0; i < levels; i++) {
+        codebook[i] = normal_sequence[i];
+    }
     // First iteration
     nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, num_bits);
     centroid(roots, codebook, levels, num_bits);
@@ -212,13 +224,16 @@ namespace simple {
         break;
       previous_distortion = current_distortion;
     }
+    std::cout << "Results! [";
+    for(int i = 0; i < levels - 1; i++)
+      std::cout << codebook[i] << ", ";
+    std::cout << codebook[levels - 1] << "]" << std::endl;
+    std::cout << "Distortion is: " << current_distortion << std::endl;
+}
 
-    // Write codebooks
-    for(int i = 0; i < levels; i++) {
-      quantizers[i] = codebook[i];
-    }
-    # if __CUDA_ARCH__ >= 200
-      printf("I am thread %d,%d: bit allocation %d, Finished with distortion %f\n", blockIdx.x, blockIdx.y, num_bits, current_distortion);
-    #endif
-  }
+int main() {
+    float* normal = generate_normal_sequence();
+    cosq(normal, 8);
+    free(normal);
+    return 0;
 }

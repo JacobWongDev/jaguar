@@ -1,12 +1,12 @@
-#include "pgm_util.h"
-#include "logger.h"
+#include "pgm_util.hpp"
+#include "logger.hpp"
 #include <stdio.h>
 #include <math.h>
 
-void copy_plane(unsigned char* src, int stride_src, float* result, int stride_result, int image_width, int image_height) {
+void copy_plane(unsigned char* src, unsigned int src_pitch, float* result, unsigned int dst_pitch, unsigned int image_width, unsigned int image_height) {
     for (int i = 0; i < image_height; i++) {
         for (int j = 0; j < image_width; j++) {
-            result[i * stride_result + j] = (float) src[i * stride_src + j];
+            result[i * dst_pitch + j] = (float) src[i * src_pitch + j];
         }
     }
 }
@@ -21,16 +21,12 @@ void copy_plane(unsigned char* src, int stride_src, float* result, int stride_re
 *
 * \return Pointer to the created plane
 */
-float* MallocPlaneFloat(int width, int height, int *pStepBytes) {
-  float *ptr;
-  *pStepBytes = ((int)ceil((width * sizeof(float)) / 16.0f)) * 16;
-  //#ifdef __ALLOW_ALIGNED_MEMORY_MANAGEMENT
-  //  ptr = (float *)_aligned_malloc(*pStepBytes * height, 16);
-  //#else
-  ptr = (float *)malloc(*pStepBytes * height);
-  //#endif
-  *pStepBytes = *pStepBytes / sizeof(float);
-  return ptr;
+float* MallocPlaneFloat(unsigned int width, unsigned int height, unsigned int* pitch) {
+    float *ptr;
+    *pitch = width * sizeof(float);
+    ptr = (float *)malloc(*pitch * height);
+    *pitch = *pitch / sizeof(float);
+    return ptr;
 }
 
 pgm_image* load_image(const char* loc) {
@@ -95,6 +91,23 @@ pgm_image* load_image(const char* loc) {
     // Close the file
     fclose(pgm);
     return image;
+}
+
+void save_image(int height, int width, float* values) {
+    int MAXLENGTH = 1000;
+    char line[MAXLENGTH];
+    FILE* pgm = fopen("Lena_test.pgm", "w");
+    if(pgm == NULL) {
+        logger_send("Couldn't open image file!", ERROR);
+    }
+    fprintf(pgm, "P5\n");
+    fprintf(pgm, "%d %d\n", width, height);
+    fprintf(pgm, "255\n");
+
+    for(int i = 0; i < width * height; i++) {
+        fputc((int) values[i], pgm);
+    }
+    fclose(pgm);
 }
 
 void free_image(pgm_image* image) {

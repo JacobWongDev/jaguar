@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(cosq LANGUAGES C CUDA)
-set(CMAKE_C_STANDARD 23)
+project(cosq LANGUAGES CXX CUDA)
+set(CMAKE_CXX_STANDARD 23)
 
 # Source Files
 set(SOURCE_FILES
     jaguar.cu
-    util/logger.c
-    util/cuda_util.c
-    util/pgm_util.c
-    training/training.cu
+    util/logger.cpp
+    util/cuda_util.cpp
+    util/pgm_util.cpp
+    training/simple_training.cu
+    transmission/transmission.cu
 )
 
 # Header Files
