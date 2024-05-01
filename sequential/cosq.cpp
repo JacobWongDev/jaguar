@@ -47,13 +47,13 @@ inline float error(float a, float b) {
   return (a - b) * (a - b);
 }
 
-void compute_error_matrix(float* error_matrix, unsigned int length, unsigned int num_bits, float (*channel_error)(int, int, int)) {
-  for(int i = 0; i < length; i++) {
-    for(int j = 0; j < length; j++) {
-      error_matrix[j + i * length] = channel_error(i, j, num_bits);
-    }
-  }
-}
+// void compute_error_matrix(float* error_matrix, unsigned int length, unsigned int num_bits, float (*channel_error)(int, int, int)) {
+//   for(int i = 0; i < length; i++) {
+//     for(int j = 0; j < length; j++) {
+//       error_matrix[j + i * length] = channel_error(i, j, num_bits);
+//     }
+//   }
+// }
 
 float polya_urn_error(int a, int b, int num_bits) {
   float temp;
@@ -87,7 +87,7 @@ float polya_urn_error(int a, int b, int num_bits) {
  * @param regions
  * @return float
  */
-void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions, int training_size, int num_bits, float* error_matrix) {
+void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions, int training_size, int num_bits, float (*channel_error)(int, int, int)) {
   float min = __FLT_MAX__;
   int min_index = -1;
   float sum = 0;
@@ -96,7 +96,7 @@ void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions,
   for(int i = 0; i < training_size; i++) {
     for(int l = 0; l < levels; l++) {
       for(int j = 0; j < levels; j++) {
-        sum += error_matrix[j + l * levels] * error(*(regions[i].value), codebook[j]);
+        sum += channel_error(j, l, num_bits) * error(*(regions[i].value), codebook[j]);
       }
       if(sum < min) {
         min_index = l;
@@ -127,7 +127,7 @@ void nearest_neighbour(float* codebook, cell** roots, int levels, cell* regions,
  * @param codebook
  * @return float
  */
-void centroid(cell** roots, float* codebook, int levels, int num_bits, float* error_matrix) {
+void centroid(cell** roots, float* codebook, int levels, int num_bits, float (*channel_error)(int, int, int)) {
   float numerator = 0;
   float denominator = 0;
   float partition_sum = 0;
@@ -154,10 +154,10 @@ void centroid(cell** roots, float* codebook, int levels, int num_bits, float* er
   for(int i = 0; i < levels; i++) {
     // Compute Numerator
     for(int j = 0; j < levels; j++)
-      numerator += error_matrix[j + i * levels] * partition_sums[j];
+      numerator += channel_error(j, i, num_bits) * partition_sums[j];
     // Compute Denominator
     for(int j = 0; j < levels; j++)
-      denominator += error_matrix[j + i * levels] * partition_sizes[j];
+      denominator += channel_error(j, i, num_bits) * partition_sizes[j];
     if(denominator == 0)
       std::cout << "\nERROR: DIVIDE BY ZERO!!!!\n";
     codebook[i] = numerator/denominator;
@@ -175,14 +175,14 @@ void centroid(cell** roots, float* codebook, int levels, int num_bits, float* er
  * @param codebook
  * @return float
  */
-float distortion(int levels, int num_bits, cell** roots, float* codebook, int training_size, float* error_matrix) {
+float distortion(int levels, int num_bits, cell** roots, float* codebook, int training_size, float (*channel_error)(int, int, int)) {
   float d = 0;
   cell* traversal = NULL;
   for(int i = 0; i < levels; i++) {
     traversal = roots[i];
     while(traversal != NULL) {
       for(int j = 0; j < levels; j++) {
-        d += error_matrix[j + i * levels] * error(*(traversal->value), codebook[j]);
+        d += channel_error(j, i, num_bits) * error(*(traversal->value), codebook[j]);
       }
       traversal = traversal->next;
     }
@@ -191,15 +191,69 @@ float distortion(int levels, int num_bits, cell** roots, float* codebook, int tr
 }
 
 /**
- * Splitting technique:
- * - A study of vector quantization for noisy channels, pg. 806 B.
-*/
-void split() {
-  
+ * @brief TODO: DOUBLE CHECK THIS
+ * 
+ * @param training_sequence 
+ * @param training_size 
+ * @param rate 
+ * @param channel_error 
+ * @return float 
+ */
+float singleton_cc(float* training_sequence, int training_size, int rate, float (*channel_error)(int, int, int)) {
+  float sum = 0;
+  for(int i = 0; i < training_size; i++)
+    sum += training_sequence[i];
+  return sum / training_size;
 }
 
-void initialize_codebook(float** codebook, float* training_sequence, int rate) {
+/**
+ * Splitting technique:
+ * - A study of vector quantization for noisy channels, pg. 806 B.
+ * - An Algorithm for Vector Quantizer Design pg. 89
+*/
+float* split(float* training_sequence, int training_size, int rate, float (*channel_error)(int, int, int)) {
+  float delta = 0.01;
+  float* temp = NULL;
+  float* codebook = (float*) malloc(sizeof(float) * (1 << rate));
+  float* temp1 = (float*) malloc(sizeof(float) * (1 << rate));
+  int k = 0;
+  int levels = 1;
+  cell* roots[MAX_CODEBOOK_SIZE];
+  cell* regions = (cell*) malloc(sizeof(cell) * TRAINING_SIZE);
+  for(int i = 0; i < TRAINING_SIZE; i++) {
+    regions[i].value = &training_sequence[i];
+    regions[i].next = NULL;
+  }
+  // Compute centroid of training sequence
+  codebook[0] = singleton_cc(training_sequence, training_size, rate, channel_error);
+  // Splitting loop
+  for(int i = 0; i < rate; i++) {
+    nearest_neighbour(codebook, roots, levels, regions, training_size, rate, channel_error);
+    centroid(roots, codebook, levels, rate, channel_error);
+    // Split!
+    for(int i = 0; i < levels; i++) {
+      temp1[2*i] = codebook[i] - delta;
+      temp1[2*i+1] = codebook[i] + delta;
+    }
+    // swap ptrs
+    temp = codebook;
+    codebook = temp1;
+    temp1 = temp;
+    levels <<= 1;
+    std::cout << "The levels are currently " << levels << "and codebook is:" << std::endl;
+    std::cout << "Results! [";
+    for(int i = 0; i < levels - 1; i++)
+      std::cout << codebook[i] << ", ";
+    std::cout << codebook[levels - 1] << "]" << std::endl;
+  }
+  free(regions);
+  free(temp1);
+  return codebook;
+}
 
+void simulated_annealing(float* codebook, float* training_sequence, int training_size, int rate, float (*channel_error)(int, int, int)) {
+  codebook = split(training_sequence, training_size, rate, channel_error);
+  free(codebook);
 }
 
 void cosq(float* training_sequence, int rate, float* quantizers, float (*channel_error)(int, int, int)) {
@@ -211,7 +265,7 @@ void cosq(float* training_sequence, int rate, float* quantizers, float (*channel
   cell* roots[MAX_CODEBOOK_SIZE];  // roots is used to point to the beginning of the linked list.
   cell* regions = (cell*) malloc(sizeof(cell) * TRAINING_SIZE);
   float error_matrix[levels * levels];
-  compute_error_matrix(error_matrix, levels, rate, channel_error);
+  // compute_error_matrix(error_matrix, levels, rate, channel_error);
   nullify(roots, MAX_CODEBOOK_SIZE);
   float threshold = 0.0001;
   // normal quantizer
@@ -222,25 +276,25 @@ void cosq(float* training_sequence, int rate, float* quantizers, float (*channel
   }
   // initialize codebook
   // Use first N training points as initial codebook.
-  initialize_codebook(&codebook, training_sequence, rate);
+  simulated_annealing(codebook, training_sequence, TRAINING_SIZE, rate, channel_error);
   // First iteration
-  nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, error_matrix);
-  centroid(roots, codebook, levels, rate, error_matrix);
-  previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, error_matrix);
-  // Lloyd Iteration
-  while(1) {
-    nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, error_matrix);
-    centroid(roots, codebook, levels, rate, error_matrix);
-    current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, error_matrix);
-    if((previous_distortion - current_distortion) / previous_distortion < threshold)
-      break;
-    previous_distortion = current_distortion;
-  }
-  std::cout << "Results! [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << codebook[i] << ", ";
-  std::cout << codebook[levels - 1] << "]" << std::endl;
-  std::cout << "Distortion is: " << current_distortion << std::endl;
+  // nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, error_matrix);
+  // centroid(roots, codebook, levels, rate, error_matrix);
+  // previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, error_matrix);
+  // // Lloyd Iteration
+  // while(1) {
+  //   nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, error_matrix);
+  //   centroid(roots, codebook, levels, rate, error_matrix);
+  //   current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, error_matrix);
+  //   if((previous_distortion - current_distortion) / previous_distortion < threshold)
+  //     break;
+  //   previous_distortion = current_distortion;
+  // }
+  // std::cout << "Results! [";
+  // for(int i = 0; i < levels - 1; i++)
+  //   std::cout << codebook[i] << ", ";
+  // std::cout << codebook[levels - 1] << "]" << std::endl;
+  // std::cout << "Distortion is: " << current_distortion << std::endl;
   free(regions);
 }
 
