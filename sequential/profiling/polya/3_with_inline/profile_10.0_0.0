@@ -1,0 +1,462 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 63.11     12.11    12.11      192     0.06     0.08  nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*)
+ 28.09     17.50     5.39 927432704     0.00     0.00  error(float, float)
+  3.80     18.23     0.73      192     0.00     0.01  distortion(int, int, quantizer_cell**, float*, int, float*)
+  3.60     18.92     0.69                             __gnu_cxx::char_traits<char>::eq(char const&, char const&)
+  1.20     19.15     0.23      192     0.00     0.00  centroid(quantizer_cell**, float*, int, int, float*)
+  0.16     19.18     0.03        1     0.03     0.03  std::random_device::operator()()
+  0.05     19.19     0.01   200000     0.00     0.00  std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()()
+  0.00     19.19     0.00   250000     0.00     0.00  std::log(float)
+  0.00     19.19     0.00   200000     0.00     0.00  std::exponential_distribution<float>::param_type::lambda() const
+  0.00     19.19     0.00   200000     0.00     0.00  std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::min()
+  0.00     19.19     0.00   200000     0.00     0.00  float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&)
+  0.00     19.19     0.00   200000     0.00     0.00  float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&)
+  0.00     19.19     0.00   200000     0.00     0.00  std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::_Adaptor(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&)
+  0.00     19.19     0.00   200000     0.00     0.00  std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::operator()()
+  0.00     19.19     0.00   200000     0.00     0.00  float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&)
+  0.00     19.19     0.00   127702     0.00     0.00  std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::min()
+  0.00     19.19     0.00   127702     0.00     0.00  std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::operator()()
+  0.00     19.19     0.00   127702     0.00     0.00  std::__detail::_Mod<unsigned long, 2147483647ul, 16807ul, 0ul, true, true>::__calc(unsigned long)
+  0.00     19.19     0.00   127702     0.00     0.00  unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 16807ul, 0ul>(unsigned long)
+  0.00     19.19     0.00   127702     0.00     0.00  std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::operator()()
+  0.00     19.19     0.00   127702     0.00     0.00  float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&)
+  0.00     19.19     0.00   100000     0.00     0.00  std::normal_distribution<float>::param_type::mean() const
+  0.00     19.19     0.00   100000     0.00     0.00  std::normal_distribution<float>::param_type::stddev() const
+  0.00     19.19     0.00   100000     0.00     0.00  float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&)
+  0.00     19.19     0.00   100000     0.00     0.00  float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&)
+  0.00     19.19     0.00   100000     0.00     0.00  std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::_Adaptor(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&)
+  0.00     19.19     0.00    50000     0.00     0.00  std::sqrt(float)
+  0.00     19.19     0.00     1248     0.00     0.00  std::__detail::_Mod<unsigned long, 4294967296ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+  0.00     19.19     0.00     1248     0.00     0.00  unsigned long std::__detail::__mod<unsigned long, 4294967296ul, 1ul, 0ul>(unsigned long)
+  0.00     19.19     0.00     1246     0.00     0.00  std::__detail::_Mod<unsigned long, 624ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+  0.00     19.19     0.00     1246     0.00     0.00  unsigned long std::__detail::__mod<unsigned long, 624ul, 1ul, 0ul>(unsigned long)
+  0.00     19.19     0.00      512     0.00     0.00  polya_urn_error(int, int, int)
+  0.00     19.19     0.00      321     0.00     0.00  std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::_M_gen_rand()
+  0.00     19.19     0.00      194     0.00     0.00  nullify(quantizer_cell**, int)
+  0.00     19.19     0.00        6     0.00     0.00  std::__detail::_Mod<unsigned long, 2147483647ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+  0.00     19.19     0.00        6     0.00     0.00  unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 1ul, 0ul>(unsigned long)
+  0.00     19.19     0.00        2     0.00     0.00  compute_error_matrix(float*, unsigned int, unsigned int, float (*)(int, int, int))
+  0.00     19.19     0.00        2     0.00     9.23  cosq(float*, int, float*, float (*)(int, int, int))
+  0.00     19.19     0.00        2     0.00     0.00  std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long)
+  0.00     19.19     0.00        2     0.00     0.00  std::exponential_distribution<float>::param_type::param_type(float)
+  0.00     19.19     0.00        2     0.00     0.00  std::exponential_distribution<float>::exponential_distribution(float)
+  0.00     19.19     0.00        2     0.00     0.00  std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long)
+  0.00     19.19     0.00        1     0.00     0.00  generate_normal_sequence()
+  0.00     19.19     0.00        1     0.00     0.04  generate_laplacian_sequence()
+  0.00     19.19     0.00        1     0.00     0.00  __static_initialization_and_destruction_0(int, int)
+  0.00     19.19     0.00        1     0.00     0.00  bool __gnu_cxx::__is_null_pointer<char const>(char const*)
+  0.00     19.19     0.00        1     0.00     0.00  std::char_traits<char>::length(char const*)
+  0.00     19.19     0.00        1     0.00     0.00  std::random_device::random_device()
+  0.00     19.19     0.00        1     0.00     0.00  std::random_device::~random_device()
+  0.00     19.19     0.00        1     0.00     0.00  std::normal_distribution<float>::param_type::param_type(float, float)
+  0.00     19.19     0.00        1     0.00     0.00  std::normal_distribution<float>::normal_distribution(float, float)
+  0.00     19.19     0.00        1     0.00     0.00  std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::mersenne_twister_engine(unsigned long)
+  0.00     19.19     0.00        1     0.00     0.00  std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine(unsigned long)
+  0.00     19.19     0.00        1     0.00     0.00  std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine()
+  0.00     19.19     0.00        1     0.00     0.00  void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag)
+  0.00     19.19     0.00        1     0.00     0.00  std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)
+  0.00     19.19     0.00        1     0.00     0.00  std::iterator_traits<char const*>::difference_type std::__distance<char const*>(char const*, char const*, std::random_access_iterator_tag)
+  0.00     19.19     0.00        1     0.00     0.00  std::iterator_traits<char const*>::iterator_category std::__iterator_category<char const*>(char const* const&)
+  0.00     19.19     0.00        1     0.00     0.00  std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*)
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) for 0.05% of 19.19 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     96.4    0.00   18.50                 main [1]
+                0.00   18.46       2/2           cosq(float*, int, float*, float (*)(int, int, int)) [2]
+                0.00    0.04       1/1           generate_laplacian_sequence() [8]
+                0.00    0.00       1/1           generate_normal_sequence() [51]
+-----------------------------------------------
+                0.00   18.46       2/2           main [1]
+[2]     96.2    0.00   18.46       2         cosq(float*, int, float*, float (*)(int, int, int)) [2]
+               12.11    3.60     192/192         nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*) [3]
+                0.73    1.79     192/192         distortion(int, int, quantizer_cell**, float*, int, float*) [5]
+                0.23    0.00     192/192         centroid(quantizer_cell**, float*, int, int, float*) [7]
+                0.00    0.00       2/2           compute_error_matrix(float*, unsigned int, unsigned int, float (*)(int, int, int)) [46]
+                0.00    0.00       2/194         nullify(quantizer_cell**, int) [43]
+-----------------------------------------------
+               12.11    3.60     192/192         cosq(float*, int, float*, float (*)(int, int, int)) [2]
+[3]     81.9   12.11    3.60     192         nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*) [3]
+                3.60    0.00 620232704/927432704     error(float, float) [4]
+                0.00    0.00     192/194         nullify(quantizer_cell**, int) [43]
+-----------------------------------------------
+                1.79    0.00 307200000/927432704     distortion(int, int, quantizer_cell**, float*, int, float*) [5]
+                3.60    0.00 620232704/927432704     nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*) [3]
+[4]     28.1    5.39    0.00 927432704         error(float, float) [4]
+-----------------------------------------------
+                0.73    1.79     192/192         cosq(float*, int, float*, float (*)(int, int, int)) [2]
+[5]     13.1    0.73    1.79     192         distortion(int, int, quantizer_cell**, float*, int, float*) [5]
+                1.79    0.00 307200000/927432704     error(float, float) [4]
+-----------------------------------------------
+                                                 <spontaneous>
+[6]      3.6    0.69    0.00                 __gnu_cxx::char_traits<char>::eq(char const&, char const&) [6]
+-----------------------------------------------
+                0.23    0.00     192/192         cosq(float*, int, float*, float (*)(int, int, int)) [2]
+[7]      1.2    0.23    0.00     192         centroid(quantizer_cell**, float*, int, int, float*) [7]
+-----------------------------------------------
+                0.00    0.04       1/1           main [1]
+[8]      0.2    0.00    0.04       1         generate_laplacian_sequence() [8]
+                0.03    0.00       1/1           std::random_device::operator()() [9]
+                0.00    0.01  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [11]
+                0.00    0.00       2/2           std::exponential_distribution<float>::exponential_distribution(float) [49]
+                0.00    0.00       1/1           std::random_device::random_device() [55]
+                0.00    0.00       1/1           std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::mersenne_twister_engine(unsigned long) [59]
+                0.00    0.00       1/2           std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [47]
+                0.00    0.00       1/1           std::random_device::~random_device() [56]
+-----------------------------------------------
+                0.03    0.00       1/1           generate_laplacian_sequence() [8]
+[9]      0.2    0.03    0.00       1         std::random_device::operator()() [9]
+-----------------------------------------------
+                0.01    0.00  200000/200000      float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [14]
+[10]     0.1    0.01    0.00  200000         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()() [10]
+                0.00    0.00     321/321         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::_M_gen_rand() [42]
+-----------------------------------------------
+                0.00    0.01  200000/200000      generate_laplacian_sequence() [8]
+[11]     0.1    0.00    0.01  200000         float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [11]
+                0.00    0.01  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+-----------------------------------------------
+                0.00    0.01  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [11]
+[12]     0.1    0.00    0.01  200000         float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+                0.00    0.01  200000/200000      std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::operator()() [13]
+                0.00    0.00  200000/200000      std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::_Adaptor(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [24]
+                0.00    0.00  200000/250000      std::log(float) [21]
+                0.00    0.00  200000/200000      std::exponential_distribution<float>::param_type::lambda() const [22]
+-----------------------------------------------
+                0.00    0.01  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+[13]     0.1    0.00    0.01  200000         std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::operator()() [13]
+                0.00    0.01  200000/200000      float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [14]
+-----------------------------------------------
+                0.00    0.01  200000/200000      std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::operator()() [13]
+[14]     0.1    0.00    0.01  200000         float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [14]
+                0.01    0.00  200000/200000      std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()() [10]
+                0.00    0.00  200000/200000      std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::min() [23]
+-----------------------------------------------
+                0.00    0.00   50000/250000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+                0.00    0.00  200000/250000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+[21]     0.0    0.00    0.00  250000         std::log(float) [21]
+-----------------------------------------------
+                0.00    0.00  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+[22]     0.0    0.00    0.00  200000         std::exponential_distribution<float>::param_type::lambda() const [22]
+-----------------------------------------------
+                0.00    0.00  200000/200000      float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [14]
+[23]     0.0    0.00    0.00  200000         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::min() [23]
+-----------------------------------------------
+                0.00    0.00  200000/200000      float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [12]
+[24]     0.0    0.00    0.00  200000         std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::_Adaptor(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [24]
+-----------------------------------------------
+                0.00    0.00  127702/127702      float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [30]
+[25]     0.0    0.00    0.00  127702         std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::min() [25]
+-----------------------------------------------
+                0.00    0.00  127702/127702      float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [30]
+[26]     0.0    0.00    0.00  127702         std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::operator()() [26]
+                0.00    0.00  127702/127702      unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 16807ul, 0ul>(unsigned long) [28]
+-----------------------------------------------
+                0.00    0.00  127702/127702      unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 16807ul, 0ul>(unsigned long) [28]
+[27]     0.0    0.00    0.00  127702         std::__detail::_Mod<unsigned long, 2147483647ul, 16807ul, 0ul, true, true>::__calc(unsigned long) [27]
+-----------------------------------------------
+                0.00    0.00  127702/127702      std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::operator()() [26]
+[28]     0.0    0.00    0.00  127702         unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 16807ul, 0ul>(unsigned long) [28]
+                0.00    0.00  127702/127702      std::__detail::_Mod<unsigned long, 2147483647ul, 16807ul, 0ul, true, true>::__calc(unsigned long) [27]
+-----------------------------------------------
+                0.00    0.00  127702/127702      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+[29]     0.0    0.00    0.00  127702         std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::operator()() [29]
+                0.00    0.00  127702/127702      float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [30]
+-----------------------------------------------
+                0.00    0.00  127702/127702      std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::operator()() [29]
+[30]     0.0    0.00    0.00  127702         float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [30]
+                0.00    0.00  127702/127702      std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::min() [25]
+                0.00    0.00  127702/127702      std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::operator()() [26]
+-----------------------------------------------
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+[31]     0.0    0.00    0.00  100000         std::normal_distribution<float>::param_type::mean() const [31]
+-----------------------------------------------
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+[32]     0.0    0.00    0.00  100000         std::normal_distribution<float>::param_type::stddev() const [32]
+-----------------------------------------------
+                0.00    0.00  100000/100000      generate_normal_sequence() [51]
+[33]     0.0    0.00    0.00  100000         float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [33]
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+-----------------------------------------------
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [33]
+[34]     0.0    0.00    0.00  100000         float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+                0.00    0.00  127702/127702      std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::operator()() [29]
+                0.00    0.00  100000/100000      std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::_Adaptor(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [35]
+                0.00    0.00  100000/100000      std::normal_distribution<float>::param_type::stddev() const [32]
+                0.00    0.00  100000/100000      std::normal_distribution<float>::param_type::mean() const [31]
+                0.00    0.00   50000/250000      std::log(float) [21]
+                0.00    0.00   50000/50000       std::sqrt(float) [36]
+-----------------------------------------------
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+[35]     0.0    0.00    0.00  100000         std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::_Adaptor(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [35]
+-----------------------------------------------
+                0.00    0.00   50000/50000       float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [34]
+[36]     0.0    0.00    0.00   50000         std::sqrt(float) [36]
+-----------------------------------------------
+                0.00    0.00    1248/1248        unsigned long std::__detail::__mod<unsigned long, 4294967296ul, 1ul, 0ul>(unsigned long) [38]
+[37]     0.0    0.00    0.00    1248         std::__detail::_Mod<unsigned long, 4294967296ul, 1ul, 0ul, true, true>::__calc(unsigned long) [37]
+-----------------------------------------------
+                0.00    0.00    1248/1248        std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [47]
+[38]     0.0    0.00    0.00    1248         unsigned long std::__detail::__mod<unsigned long, 4294967296ul, 1ul, 0ul>(unsigned long) [38]
+                0.00    0.00    1248/1248        std::__detail::_Mod<unsigned long, 4294967296ul, 1ul, 0ul, true, true>::__calc(unsigned long) [37]
+-----------------------------------------------
+                0.00    0.00    1246/1246        unsigned long std::__detail::__mod<unsigned long, 624ul, 1ul, 0ul>(unsigned long) [40]
+[39]     0.0    0.00    0.00    1246         std::__detail::_Mod<unsigned long, 624ul, 1ul, 0ul, true, true>::__calc(unsigned long) [39]
+-----------------------------------------------
+                0.00    0.00    1246/1246        std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [47]
+[40]     0.0    0.00    0.00    1246         unsigned long std::__detail::__mod<unsigned long, 624ul, 1ul, 0ul>(unsigned long) [40]
+                0.00    0.00    1246/1246        std::__detail::_Mod<unsigned long, 624ul, 1ul, 0ul, true, true>::__calc(unsigned long) [39]
+-----------------------------------------------
+                0.00    0.00     512/512         compute_error_matrix(float*, unsigned int, unsigned int, float (*)(int, int, int)) [46]
+[41]     0.0    0.00    0.00     512         polya_urn_error(int, int, int) [41]
+-----------------------------------------------
+                0.00    0.00     321/321         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()() [10]
+[42]     0.0    0.00    0.00     321         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::_M_gen_rand() [42]
+-----------------------------------------------
+                0.00    0.00       2/194         cosq(float*, int, float*, float (*)(int, int, int)) [2]
+                0.00    0.00     192/194         nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*) [3]
+[43]     0.0    0.00    0.00     194         nullify(quantizer_cell**, int) [43]
+-----------------------------------------------
+                0.00    0.00       6/6           unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 1ul, 0ul>(unsigned long) [45]
+[44]     0.0    0.00    0.00       6         std::__detail::_Mod<unsigned long, 2147483647ul, 1ul, 0ul, true, true>::__calc(unsigned long) [44]
+-----------------------------------------------
+                0.00    0.00       6/6           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long) [50]
+[45]     0.0    0.00    0.00       6         unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 1ul, 0ul>(unsigned long) [45]
+                0.00    0.00       6/6           std::__detail::_Mod<unsigned long, 2147483647ul, 1ul, 0ul, true, true>::__calc(unsigned long) [44]
+-----------------------------------------------
+                0.00    0.00       2/2           cosq(float*, int, float*, float (*)(int, int, int)) [2]
+[46]     0.0    0.00    0.00       2         compute_error_matrix(float*, unsigned int, unsigned int, float (*)(int, int, int)) [46]
+                0.00    0.00     512/512         polya_urn_error(int, int, int) [41]
+-----------------------------------------------
+                0.00    0.00       1/2           generate_laplacian_sequence() [8]
+                0.00    0.00       1/2           std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::mersenne_twister_engine(unsigned long) [59]
+[47]     0.0    0.00    0.00       2         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [47]
+                0.00    0.00    1248/1248        unsigned long std::__detail::__mod<unsigned long, 4294967296ul, 1ul, 0ul>(unsigned long) [38]
+                0.00    0.00    1246/1246        unsigned long std::__detail::__mod<unsigned long, 624ul, 1ul, 0ul>(unsigned long) [40]
+-----------------------------------------------
+                0.00    0.00       2/2           std::exponential_distribution<float>::exponential_distribution(float) [49]
+[48]     0.0    0.00    0.00       2         std::exponential_distribution<float>::param_type::param_type(float) [48]
+-----------------------------------------------
+                0.00    0.00       2/2           generate_laplacian_sequence() [8]
+[49]     0.0    0.00    0.00       2         std::exponential_distribution<float>::exponential_distribution(float) [49]
+                0.00    0.00       2/2           std::exponential_distribution<float>::param_type::param_type(float) [48]
+-----------------------------------------------
+                0.00    0.00       1/2           generate_normal_sequence() [51]
+                0.00    0.00       1/2           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine(unsigned long) [60]
+[50]     0.0    0.00    0.00       2         std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long) [50]
+                0.00    0.00       6/6           unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 1ul, 0ul>(unsigned long) [45]
+-----------------------------------------------
+                0.00    0.00       1/1           main [1]
+[51]     0.0    0.00    0.00       1         generate_normal_sequence() [51]
+                0.00    0.00  100000/100000      float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [33]
+                0.00    0.00       1/1           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine() [61]
+                0.00    0.00       1/2           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long) [50]
+                0.00    0.00       1/1           std::normal_distribution<float>::normal_distribution(float, float) [58]
+-----------------------------------------------
+                0.00    0.00       1/1           _GLOBAL__sub_I_polya_epsilon [67]
+[52]     0.0    0.00    0.00       1         __static_initialization_and_destruction_0(int, int) [52]
+-----------------------------------------------
+                0.00    0.00       1/1           void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) [62]
+[53]     0.0    0.00    0.00       1         bool __gnu_cxx::__is_null_pointer<char const>(char const*) [53]
+-----------------------------------------------
+                0.00    0.00       1/1           std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [63]
+[54]     0.0    0.00    0.00       1         std::char_traits<char>::length(char const*) [54]
+-----------------------------------------------
+                0.00    0.00       1/1           generate_laplacian_sequence() [8]
+[55]     0.0    0.00    0.00       1         std::random_device::random_device() [55]
+                0.00    0.00       1/1           std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [63]
+-----------------------------------------------
+                0.00    0.00       1/1           generate_laplacian_sequence() [8]
+[56]     0.0    0.00    0.00       1         std::random_device::~random_device() [56]
+-----------------------------------------------
+                0.00    0.00       1/1           std::normal_distribution<float>::normal_distribution(float, float) [58]
+[57]     0.0    0.00    0.00       1         std::normal_distribution<float>::param_type::param_type(float, float) [57]
+-----------------------------------------------
+                0.00    0.00       1/1           generate_normal_sequence() [51]
+[58]     0.0    0.00    0.00       1         std::normal_distribution<float>::normal_distribution(float, float) [58]
+                0.00    0.00       1/1           std::normal_distribution<float>::param_type::param_type(float, float) [57]
+-----------------------------------------------
+                0.00    0.00       1/1           generate_laplacian_sequence() [8]
+[59]     0.0    0.00    0.00       1         std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::mersenne_twister_engine(unsigned long) [59]
+                0.00    0.00       1/2           std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [47]
+-----------------------------------------------
+                0.00    0.00       1/1           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine() [61]
+[60]     0.0    0.00    0.00       1         std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine(unsigned long) [60]
+                0.00    0.00       1/2           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long) [50]
+-----------------------------------------------
+                0.00    0.00       1/1           generate_normal_sequence() [51]
+[61]     0.0    0.00    0.00       1         std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine() [61]
+                0.00    0.00       1/1           std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine(unsigned long) [60]
+-----------------------------------------------
+                0.00    0.00       1/1           std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [63]
+[62]     0.0    0.00    0.00       1         void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) [62]
+                0.00    0.00       1/1           bool __gnu_cxx::__is_null_pointer<char const>(char const*) [53]
+                0.00    0.00       1/1           std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*) [66]
+-----------------------------------------------
+                0.00    0.00       1/1           std::random_device::random_device() [55]
+[63]     0.0    0.00    0.00       1         std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [63]
+                0.00    0.00       1/1           std::char_traits<char>::length(char const*) [54]
+                0.00    0.00       1/1           void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) [62]
+-----------------------------------------------
+                0.00    0.00       1/1           std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*) [66]
+[64]     0.0    0.00    0.00       1         std::iterator_traits<char const*>::difference_type std::__distance<char const*>(char const*, char const*, std::random_access_iterator_tag) [64]
+-----------------------------------------------
+                0.00    0.00       1/1           std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*) [66]
+[65]     0.0    0.00    0.00       1         std::iterator_traits<char const*>::iterator_category std::__iterator_category<char const*>(char const* const&) [65]
+-----------------------------------------------
+                0.00    0.00       1/1           void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) [62]
+[66]     0.0    0.00    0.00       1         std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*) [66]
+                0.00    0.00       1/1           std::iterator_traits<char const*>::iterator_category std::__iterator_category<char const*>(char const* const&) [65]
+                0.00    0.00       1/1           std::iterator_traits<char const*>::difference_type std::__distance<char const*>(char const*, char const*, std::random_access_iterator_tag) [64]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+   [5] distortion(int, int, quantizer_cell**, float*, int, float*) [57] std::normal_distribution<float>::param_type::param_type(float, float) [27] std::__detail::_Mod<unsigned long, 2147483647ul, 16807ul, 0ul, true, true>::__calc(unsigned long)
+  [41] polya_urn_error(int, int, int) [58] std::normal_distribution<float>::normal_distribution(float, float) [44] std::__detail::_Mod<unsigned long, 2147483647ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+   [3] nearest_neighbour(float*, quantizer_cell**, int, quantizer_cell*, int, int, float*) [33] float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&) [37] std::__detail::_Mod<unsigned long, 4294967296ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+  [46] compute_error_matrix(float*, unsigned int, unsigned int, float (*)(int, int, int)) [34] float std::normal_distribution<float>::operator()<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&, std::normal_distribution<float>::param_type const&) [39] std::__detail::_Mod<unsigned long, 624ul, 1ul, 0ul, true, true>::__calc(unsigned long)
+  [51] generate_normal_sequence() [42] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::_M_gen_rand() [28] unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 16807ul, 0ul>(unsigned long)
+   [8] generate_laplacian_sequence() [23] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::min() [45] unsigned long std::__detail::__mod<unsigned long, 2147483647ul, 1ul, 0ul>(unsigned long)
+  [52] __static_initialization_and_destruction_0(int, int) [47] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::seed(unsigned long) [38] unsigned long std::__detail::__mod<unsigned long, 4294967296ul, 1ul, 0ul>(unsigned long)
+   [2] cosq(float*, int, float*, float (*)(int, int, int)) [59] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::mersenne_twister_engine(unsigned long) [40] unsigned long std::__detail::__mod<unsigned long, 624ul, 1ul, 0ul>(unsigned long)
+   [4] error(float, float)    [10] std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>::operator()() [24] std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::_Adaptor(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&)
+  [43] nullify(quantizer_cell**, int) [48] std::exponential_distribution<float>::param_type::param_type(float) [13] std::__detail::_Adaptor<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>, float>::operator()()
+   [7] centroid(quantizer_cell**, float*, int, int, float*) [49] std::exponential_distribution<float>::exponential_distribution(float) [35] std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::_Adaptor(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&)
+   [6] __gnu_cxx::char_traits<char>::eq(char const&, char const&) [11] float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&) [29] std::__detail::_Adaptor<std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>, float>::operator()()
+  [53] bool __gnu_cxx::__is_null_pointer<char const>(char const*) [12] float std::exponential_distribution<float>::operator()<std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&, std::exponential_distribution<float>::param_type const&) [64] std::iterator_traits<char const*>::difference_type std::__distance<char const*>(char const*, char const*, std::random_access_iterator_tag)
+  [31] std::normal_distribution<float>::param_type::mean() const [25] std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::min() [14] float std::generate_canonical<float, 24ul, std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul> >(std::mersenne_twister_engine<unsigned long, 32ul, 624ul, 397ul, 31ul, 2567483615ul, 11ul, 4294967295ul, 7ul, 2636928640ul, 15ul, 4022730752ul, 18ul, 1812433253ul>&)
+  [32] std::normal_distribution<float>::param_type::stddev() const [50] std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::seed(unsigned long) [30] float std::generate_canonical<float, 24ul, std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul> >(std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>&)
+  [22] std::exponential_distribution<float>::param_type::lambda() const [60] std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine(unsigned long) [65] std::iterator_traits<char const*>::iterator_category std::__iterator_category<char const*>(char const* const&)
+  [54] std::char_traits<char>::length(char const*) [61] std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::linear_congruential_engine() [21] std::log(float)
+  [55] std::random_device::random_device() [26] std::linear_congruential_engine<unsigned long, 16807ul, 0ul, 2147483647ul>::operator()() [36] std::sqrt(float)
+  [56] std::random_device::~random_device() [62] void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char const*>(char const*, char const*, std::forward_iterator_tag) [66] std::iterator_traits<char const*>::difference_type std::distance<char const*>(char const*, char const*)
+   [9] std::random_device::operator()() [63] std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&)

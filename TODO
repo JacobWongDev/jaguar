@@ -3,8 +3,6 @@ cuda-gdb --args ./cosq -T -d training-images -c bs
 
 TODOS
 =====
-- Implement Splitting technique
-- Implement Simulated Annealing
 - Identify ideal data structures
     - Consider Locality of reference
 - Find ideal model for over-the-air transmission noise

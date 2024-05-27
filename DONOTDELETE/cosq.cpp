@@ -1,7 +1,6 @@
 #include <random>
 #include <unordered_set>
 #include <iostream>
-#include <cstring>
 
 #define TRAINING_SIZE 100000
 #define MAX_CODEBOOK_SIZE 256
@@ -241,143 +240,19 @@ float* split(float* training_sequence, int training_size, int rate, float (*chan
     codebook = temp1;
     temp1 = temp;
     levels <<= 1;
+    // std::cout << "The levels are currently " << levels << "and codebook is:" << std::endl;
+    // std::cout << "Results! [";
+    // for(int i = 0; i < levels - 1; i++)
+    //   std::cout << codebook[i] << ", ";
+    // std::cout << codebook[levels - 1] << "]" << std::endl;
   }
   free(regions);
   free(temp1);
-  std::cout << "Split generated codebook: [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << codebook[i] << ", ";
-  std::cout << codebook[levels - 1] << "]" << std::endl;
   return codebook;
 }
 
-inline void swap(float* a, float* b) {
-  float temp = *a;
-  *a = *b;
-  *b = temp;
-}
-
-/**
- * Steven S. Skiena
-*/
-inline void random_permutation(float* arr, int length) {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  for(int i = 0; i < length; i++) {
-    std::uniform_int_distribution<> distr(i, length - 1);
-    swap(arr + i, arr + distr(gen));
-  }
-}
-
-/**
- * Described in "A_study_of_vector_quantization_for_noisy_channels"
-*/
-inline void perturb(unsigned int* x, unsigned int* y, float* arr, int levels) {
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> first(0, levels - 1);
-  std::uniform_int_distribution<> second(0, levels - 2);
-  *x = first(gen);
-  *y = second(gen);
-  if(*y >= *x) {
-    swap(arr + *x, arr + *y + 1);
-  } else {
-    swap(arr + *x, arr + *y);
-  }
-  // std::cout << "Swapping " << *x << " and " << *y << std::endl;
-  // std::cout << "Perturbed inside func: [";
-  // for(int i = 0; i < levels - 1; i++)
-  //   std::cout << arr[i] << ", ";
-  // std::cout << arr[levels - 1] << "]" << std::endl;
-}
-
-/**
- * 
- * TODO: DELETE AFTER DEBUGGING!!
-*/
-void printArrays(float* arr1, float* arr2, int levels) {
-  std::cout << "Current: [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << arr1[i] << ", ";
-  std::cout << arr1[levels - 1] << "]" << std::endl;
-  std::cout << "Perturbed: [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << arr2[i] << ", ";
-  std::cout << arr2[levels - 1] << "]" << std::endl;
-}
-
-/**
- * TODO: Still have NOT added condition where we exit if system "Appears stable" since I cannot
- * find any good resource on how this is determined in any of the research papers.
- *
- * Modelled primarily using "A_study_of_vector_quantization_for_noisy_channels"
- * To get algorithm skeleton, "Using Simulated Annealing to Design Good Codes"
-*/
 float* simulated_annealing(float* training_sequence, int training_size, int rate, float (*channel_error)(int, int, int)) {
-  float* current = split(training_sequence, training_size, rate, channel_error);
-  unsigned int levels = 1 << rate;
-  float* next = (float*) malloc(sizeof(float) * levels);
-  cell* roots[MAX_CODEBOOK_SIZE];  // roots is used to point to the beginning of the linked list.
-  cell* regions = (cell*) malloc(sizeof(cell) * TRAINING_SIZE);
-  float temperature = 10;
-  const float final_temp = 0.00025;
-  const float alpha = 0.97;
-  float d1 = 0, d2 = 0, delta = 0;
-  // end conditions
-  const unsigned int max_iterations = 10;
-  unsigned int i = 0;
-  const unsigned int max_drops = 5;
-  unsigned int drops = 0;
-  // swapping
-  unsigned int x, y;
-  std::default_random_engine generator;
-  std::uniform_real_distribution<float> distr(0.0, 1.0);
-  //setup regions
-  for(int i = 0; i < training_size; i++) {
-    regions[i].value = &training_sequence[i];
-    regions[i].next = NULL;
-  }
-  std::memcpy(next, current, sizeof(float) * levels);
-  do {
-    do {
-      std::cout << "Iteration: " << i << std::endl;
-      // Generate perturbed index assignment
-      perturb(&x, &y, next, levels);
-      std::cout << "After Perturbation:" << std::endl;
-      printArrays(current, next, levels);
-      // Calculate distortion
-      nearest_neighbour(current, roots, levels, regions, training_size, rate, channel_error);
-      d1 = distortion(levels, rate, roots, current, training_size, channel_error);
-      nearest_neighbour(next, roots, levels, regions, training_size, rate, channel_error);
-      d2 = distortion(levels, rate, roots, next, training_size, channel_error);
-      delta = d2 - d1;
-      if(delta < 0) {
-        drops++;
-        // Make current the same as next.
-        if(y >= x) {
-          swap(current + x, current + y + 1);
-        } else {
-          swap(current + x, current + y);
-        }
-      } else if(distr(generator) <= exp(-1*delta/temperature)) {
-        // Make current the same as next.
-        if(y >= x) {
-          swap(current + x, current + y + 1);
-        } else {
-          swap(current + x, current + y);
-        }
-      }
-      std::cout << "After energy measurement:" << std::endl;
-      printArrays(current, next, levels);
-      i++;
-    } while (max_drops > drops && i < max_iterations);
-    // decrease temp
-    temperature *= alpha;
-    drops = 0;
-    i = 0;
-  } while(temperature > final_temp);
-  free(next);
-  return current;
+  return split(training_sequence, training_size, rate, channel_error);
 }
 
 void cosq(float* training_sequence, int rate, float (*channel_error)(int, int, int)) {
@@ -398,20 +273,22 @@ void cosq(float* training_sequence, int rate, float (*channel_error)(int, int, i
     regions[i].value = &training_sequence[i];
     regions[i].next = NULL;
   }
+  // initialize codebook
+  // Use first N training points as initial codebook.
   codebook = simulated_annealing(training_sequence, TRAINING_SIZE, rate, channel_error);
   // First iteration
-  // nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
-  // centroid(roots, codebook, levels, rate, channel_error);
-  // previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
-  // // Lloyd Iteration
-  // while(1) {
-  //   nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
-  //   centroid(roots, codebook, levels, rate, channel_error);
-  //   current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
-  //   if((previous_distortion - current_distortion) / previous_distortion < threshold)
-  //     break;
-  //   previous_distortion = current_distortion;
-  // }
+  nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
+  centroid(roots, codebook, levels, rate, channel_error);
+  previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
+  // Lloyd Iteration
+  while(1) {
+    nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
+    centroid(roots, codebook, levels, rate, channel_error);
+    current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
+    if((previous_distortion - current_distortion) / previous_distortion < threshold)
+      break;
+    previous_distortion = current_distortion;
+  }
   std::cout << "Results! [";
   for(int i = 0; i < levels - 1; i++)
     std::cout << codebook[i] << ", ";
@@ -426,6 +303,7 @@ int main(int argc, char** argv) {
   polya_epsilon = atof(argv[2]);
   int rate = atoi(argv[3]);
   printf("Training %d-bit normal quantizer for polya channel delta %f, epsilon %f\n", rate, polya_delta, polya_epsilon);
+  float* quantizer = NULL;
   float* normal = generate_normal_sequence();
   // Verify 0 mean and unit variance::
   float sum = 0;
@@ -446,5 +324,6 @@ int main(int argc, char** argv) {
   // Start training here
   cosq(normal, rate, polya_urn_error);
   free(normal);
+  free(quantizer);
   return 0;
 }
