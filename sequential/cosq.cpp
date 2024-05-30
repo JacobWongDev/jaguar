@@ -292,7 +292,7 @@ inline void perturb(unsigned int* x, unsigned int* y, float* arr, int levels) {
 }
 
 /**
- * 
+ *
  * TODO: DELETE AFTER DEBUGGING!!
 */
 void printArrays(float* arr1, float* arr2, int levels) {
@@ -320,7 +320,9 @@ float* simulated_annealing(float* training_sequence, int training_size, int rate
   cell* roots[MAX_CODEBOOK_SIZE];  // roots is used to point to the beginning of the linked list.
   cell* regions = (cell*) malloc(sizeof(cell) * TRAINING_SIZE);
   float temperature = 10;
-  const float final_temp = 0.00025;
+  // const float final_temp = 0.00025;
+  // const float alpha = 0.97;
+  const float final_temp = 8;
   const float alpha = 0.97;
   float d1 = 0, d2 = 0, delta = 0;
   // end conditions
@@ -373,10 +375,12 @@ float* simulated_annealing(float* training_sequence, int training_size, int rate
     } while (max_drops > drops && i < max_iterations);
     // decrease temp
     temperature *= alpha;
+    std::cout << "::::::::::::::::::::::::TEMPERATURE IS NOW:" << temperature << " :::::::::::::::::::::::::::" << std::endl;
     drops = 0;
     i = 0;
   } while(temperature > final_temp);
   free(next);
+  free(regions);
   return current;
 }
 
@@ -400,18 +404,18 @@ void cosq(float* training_sequence, int rate, float (*channel_error)(int, int, i
   }
   codebook = simulated_annealing(training_sequence, TRAINING_SIZE, rate, channel_error);
   // First iteration
-  // nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
-  // centroid(roots, codebook, levels, rate, channel_error);
-  // previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
-  // // Lloyd Iteration
-  // while(1) {
-  //   nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
-  //   centroid(roots, codebook, levels, rate, channel_error);
-  //   current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
-  //   if((previous_distortion - current_distortion) / previous_distortion < threshold)
-  //     break;
-  //   previous_distortion = current_distortion;
-  // }
+  nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
+  centroid(roots, codebook, levels, rate, channel_error);
+  previous_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
+  // Lloyd Iteration
+  while(1) {
+    nearest_neighbour(codebook, roots, levels, regions, TRAINING_SIZE, rate, channel_error);
+    centroid(roots, codebook, levels, rate, channel_error);
+    current_distortion = distortion(levels, rate, roots, codebook, TRAINING_SIZE, channel_error);
+    if((previous_distortion - current_distortion) / previous_distortion < threshold)
+      break;
+    previous_distortion = current_distortion;
+  }
   std::cout << "Results! [";
   for(int i = 0; i < levels - 1; i++)
     std::cout << codebook[i] << ", ";

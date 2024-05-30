@@ -6,8 +6,6 @@
 #include "util/logger.hpp"
 #include "util/cuda_util.hpp"
 #include "util/pgm_util.hpp"
-#include "training/simple_training.cuh"
-#include "transmission/transmission.cuh"
 #include "cuda/bit_allocations.h"
 
 enum MODE {
@@ -108,10 +106,10 @@ int main(int argc, char** argv) {
     if(init() && (mode = parse_args(argc, argv, &quantizer_file, &dir_name, &channel_name))) {
         switch(mode) {
             case TRAINING:
-                train(__76_bit);
+                // train(__76_bit);
             break;
             case CHANNEL_TRANSMISSION:
-                transmit_over_channel(__76_bit, dir_name, quantizer_file, channel_name);
+                // transmit_over_channel(__76_bit, dir_name, quantizer_file, channel_name);
             break;
             case NONE:
                 return EXIT_FAILURE;
