@@ -113,11 +113,14 @@ int main(int argc, char** argv) {
   float* device_error_matrix;
   float* device_codebook;
   unsigned int* device_cells;
+  unsigned int* device_cells_2;
   checkCudaErrors(cudaMalloc((void **) &device_training_seq, TRAINING_SIZE*sizeof(float)));
   checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(float)));
   checkCudaErrors(cudaMalloc((void **) &device_codebook, levels*sizeof(float)));
   checkCudaErrors(cudaMalloc((void **) &device_cells, TRAINING_SIZE*sizeof(float)));
+  checkCudaErrors(cudaMalloc((void **) &device_cells_2, TRAINING_SIZE*sizeof(float)));
   unsigned int* cuda_cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);
+  unsigned int* cuda_cells_2 = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);
 
   /*
     Kernel nnc_e32
@@ -134,6 +137,21 @@ int main(int argc, char** argv) {
   t = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Kernel nnc_e32 result took " << t.count() << "ms." << std::endl;
 
+  /*
+    Kernel nnc_e32_v2
+  */
+  start = std::chrono::high_resolution_clock::now();
+  checkCudaErrors(cudaMemcpy(device_training_seq, normal_sequence, TRAINING_SIZE*sizeof(float), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(float), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(float), cudaMemcpyHostToDevice));
+  grid_size = {TRAINING_SIZE, 1, 1};
+  block_size = {32, 1, 1};
+  nnc_e32_v2<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix, device_cells_2);
+  checkCudaErrors(cudaMemcpy(cuda_cells_2, device_cells_2, TRAINING_SIZE*sizeof(float), cudaMemcpyDeviceToHost));
+  end = std::chrono::high_resolution_clock::now();
+  t = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Kernel nnc_e32_v2 result took " << t.count() << "ms." << std::endl;
+
   // compare results
   bool equal = true;
   for(int i = 0; i < TRAINING_SIZE; i++) {
@@ -145,15 +163,30 @@ int main(int argc, char** argv) {
     }
   }
   if(equal)
-    std::cout << "Equal! Test Passed!" << std::endl;
+    std::cout << "Equal! v1 Test Passed!" << std::endl;
+
+  // compare results
+  equal = true;
+  for(int i = 0; i < TRAINING_SIZE; i++) {
+    if((cuda_cells_2[i] != seq_cells[i]) && (cell_sums[cuda_cells_2[i]] != cell_sums[seq_cells[i]])) {
+      std::cout << "Iteration: " << i << " seq: " << seq_cells[i] << " cuda: " << cuda_cells_2[i] << std::endl;
+      std::cout << "Not equal! Test failed!" << std::endl;
+      equal = false;
+      break;
+    }
+  }
+  if(equal)
+    std::cout << "Equal! v2 Test Passed!" << std::endl;
 
   checkCudaErrors(cudaFree(device_training_seq));
   checkCudaErrors(cudaFree(device_error_matrix));
   checkCudaErrors(cudaFree(device_codebook));
   checkCudaErrors(cudaFree(device_cells));
+  checkCudaErrors(cudaFree(device_cells_2));
   free(seq_cells);
   free(cell_sums);
   free(cuda_cells);
+  free(cuda_cells_2);
   free(codebook);
   free(normal_sequence);
   free(error_matrix);
