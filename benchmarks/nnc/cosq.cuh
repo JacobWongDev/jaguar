@@ -1,11 +1,25 @@
 #include <cuda_device_runtime_api.h>
+#define TRAINING_SIZE 1048576
 #define WARP_SIZE 32
 #define FULL_MASK 0xffffffff
 
-/*
-    References
-    - Kahan Summation: https://graphics.stanford.edu/courses/cs205a-13-fall/assets/notes/chapter1.pdf
-*/
+__device__ double atomicAddDouble(double* address, double val)
+{
+    unsigned long long int* address_as_ull =
+                              (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                               __longlong_as_double(assumed)));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+    } while (assumed != old);
+
+    return __longlong_as_double(old);
+}
 
 /**
  * CUDA Kernel for the Nearest Neighbour Condition (nnc), for codebooks with greater than or equal to 32 elements.
@@ -17,31 +31,24 @@
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
 template <unsigned int levels>
-__global__ void nnc_e32(float* training_sequence, float* codebook, float* error_matrix, unsigned int* cells, float* cc_sums, unsigned int* cc_cardinal) {
-    __shared__ float s_codebook[levels];
-    __shared__ float s_sums[levels];
+__global__ void nnc_e32(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+    __shared__ double s_codebook[levels];
+    __shared__ double s_sums[levels];
     __shared__ unsigned int s_min_indices[WARP_SIZE];
     unsigned int t = threadIdx.x;
-    float target = training_sequence[blockIdx.x];
-    float sum = 0;
-    float c = 0; // compensation
-    float next, next_sum;
+    double target = training_sequence[blockIdx.x];
+    double sum = 0;
     unsigned int num_sums = levels / WARP_SIZE;
     // load codebook into shared mem
     for(unsigned int k = 0; k < num_sums; k++) {
         s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
     }
     for(unsigned int k = 0; k < num_sums; k++) {
-        // Kahan Summation
         for(unsigned int i = 0; i < levels; i++) {
-            next = error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]) + c;
-            next_sum = sum + next;
-            c = next - (next_sum - sum);
-            sum = next_sum;
+            sum += error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]);
         }
         s_sums[num_sums*t + k] = sum;
         sum = 0;
-        c = 0;
     }
     // Now, find minimum array INDEX of all the sums.
     unsigned int min_index = t;
@@ -76,7 +83,7 @@ __global__ void nnc_e32(float* training_sequence, float* codebook, float* error_
             s_min_indices[0] = s_min_indices[1];
         }
         cells[blockIdx.x] = s_min_indices[0];
-        atomicAdd(cc_sums + s_min_indices[0], target);
+        atomicAddDouble(cc_sums + s_min_indices[0], target);
         atomicAdd(cc_cardinal + s_min_indices[0], 1);
     }
 }
@@ -91,28 +98,68 @@ __global__ void nnc_e32(float* training_sequence, float* codebook, float* error_
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
 template <unsigned int levels>
-__global__ void nnc_e32_v2(float* training_sequence, float* codebook, float* error_matrix, unsigned int* cells, float* cc_sums, unsigned int* cc_cardinal) {
-    __shared__ float s_codebook[levels];
-    __shared__ float s_sums[levels];
+__global__ void nnc_e32_v2(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+    __shared__ double s_codebook[levels];
+    __shared__ double s_sums[levels];
     unsigned int t = threadIdx.x;
-    float target = training_sequence[blockIdx.x];
-    float sum = 0;
+    double target = training_sequence[blockIdx.x];
+    double sum = 0;
     unsigned int num_sums = levels / WARP_SIZE;
     unsigned int min_index = t;
     unsigned int shfl_min_index;
-    float c = 0; // compensation
-    float next, next_sum;
     // load codebook into shared mem
     for(unsigned int k = 0; k < num_sums; k++) {
         s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
     }
     for(unsigned int k = 0; k < num_sums; k++) {
-        // Kahan Summation
         for(unsigned int i = 0; i < levels; i++) {
-            next = error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]) + c;
-            next_sum = sum + next;
-            c = next - (next_sum - sum);
-            sum = next_sum;
+            sum += error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]);
+        }
+        s_sums[num_sums*t + k] = sum;
+        sum = 0;
+    }
+    // Now, find minimum array INDEX of all the sums.
+    for(unsigned int k = 1; k < num_sums; k++) {
+        if(s_sums[min_index] > s_sums[WARP_SIZE*k + t]) {
+            min_index = WARP_SIZE*k + t;
+        }
+    }
+    #pragma unroll
+    for(int offset = 16; offset > 0; offset /= 2) {
+        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
+        if(s_sums[min_index] > s_sums[shfl_min_index]) {
+            min_index = shfl_min_index;
+        }
+    }
+    if(t == 0) {
+        cells[blockIdx.x] = min_index;
+        atomicAddDouble(cc_sums + min_index, target);
+        atomicAdd(cc_cardinal + min_index, 1);
+    }
+}
+
+template <unsigned int levels>
+__global__ void nnc_e32_v3(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells) {
+    __shared__ double s_codebook[levels];
+    __shared__ double s_sums[levels];
+    unsigned int t = threadIdx.x;
+    double target = training_sequence[blockIdx.x];
+    double sum = 0;
+    double c = 0;
+    unsigned int num_sums = levels / WARP_SIZE;
+    unsigned int min_index = t;
+    unsigned int shfl_min_index;
+    // load codebook into shared mem
+    for(unsigned int k = 0; k < num_sums; k++) {
+        s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
+    }
+    // Kahan Summation
+    for(unsigned int k = 0; k < num_sums; k++) {
+        for(unsigned int i = 0; i < levels; i++) {
+            double y = error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]) - c;
+            double t = sum + y;
+            c = (t - sum) - y;
+            sum = t;
         }
         s_sums[num_sums*t + k] = sum;
         sum = 0;
@@ -133,7 +180,34 @@ __global__ void nnc_e32_v2(float* training_sequence, float* codebook, float* err
     }
     if(t == 0) {
         cells[blockIdx.x] = min_index;
-        atomicAdd(cc_sums + min_index, target);
-        atomicAdd(cc_cardinal + min_index, 1);
+    }
+}
+
+template <unsigned int levels>
+__global__ void cc_p1(double* training_sequence, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinality) {
+    unsigned int target = blockIdx.x;
+    unsigned int t = threadIdx.x;
+    unsigned int section = TRAINING_SIZE / WARP_SIZE;
+    unsigned int cardinality = 0;
+    double cell_sum = 0;
+    double c = 0;
+    // Kahan Summation
+    for(int i = 0; i < section; i++) {
+        if(cells[i + section*t] == target) {
+            cardinality++;
+            double y = training_sequence[i + section*t] - c;
+            double t = cell_sum + y;
+            c = (t - cell_sum) - y;
+            cell_sum = t;
+        }
+    }
+    // reduce
+    for(int offset = 16; offset > 0; offset /= 2) {
+        cardinality += __shfl_down_sync(FULL_MASK, cardinality, offset);
+        cell_sum += __shfl_down_sync(FULL_MASK, cell_sum, offset);
+    }
+    if(t == 0) {
+        cc_cardinality[target] = cardinality;
+        cc_sums[target] = cell_sum;
     }
 }
