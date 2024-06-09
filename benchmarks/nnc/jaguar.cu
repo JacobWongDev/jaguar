@@ -7,7 +7,7 @@
 #define RATE 8
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
-#define double_ERROR 0.0001
+#define MAX_ERROR 0.0000001
 
 void check(cudaError_t error, const char* file, int line) {
     if(cudaSuccess != error) {
@@ -123,7 +123,7 @@ void nnc_cc_test(unsigned int levels, double* training_sequence, unsigned int* c
   bool equal = true;
   std::cout << "Executing test cell cardinality and min sums..." << std::endl;
   for(int i = 0; i < levels; i++) {
-    if((cuda_cc_cardinality[i] != cardinality[i]) || abs(cc_training_sums[i] - cuda_cc_training_sums[i]) > double_ERROR) {
+    if((cuda_cc_cardinality[i] != cardinality[i]) || abs(cc_training_sums[i] - cuda_cc_training_sums[i]) > MAX_ERROR) {
       std::cout << "Codebook element: " << i << " cuda nnc cardinality: " << cardinality[i] << " cuda cc cardinality: "
                 << cuda_cc_cardinality[i] << std::endl;
       std::cout << "Codebook element: " << i << std::setprecision(10) << " cuda nnc sum: " << cc_training_sums[i]

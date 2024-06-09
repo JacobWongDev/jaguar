@@ -5,14 +5,14 @@
     Each block handles 32 sums.
 */
 template <unsigned int levels>
-__global__ void distortion_gather(float* training_sequence, float* codebook, float* error_matrix, unsigned int* cells, float* intermediate) {
-    __shared__ float s_codebook[levels];
+__global__ void distortion_gather(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* intermediate) {
+    __shared__ double s_codebook[levels];
     unsigned int t = threadIdx.x;
     unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
-    float target = training_sequence[idx];
+    double target = training_sequence[idx];
     unsigned int loads_per_thread = levels / WARP_SIZE;
     unsigned int i_nnc = cells[idx];
-    float sum = 0;
+    double sum = 0;
     // load codebook into shared mem
     for(unsigned int k = 0; k < loads_per_thread; k++) {
         s_codebook[loads_per_thread*t + k] = codebook[loads_per_thread*t + k];
@@ -43,7 +43,7 @@ struct SharedMemory {
   }
 };
 
-__device__ __forceinline__ float warpReduceSum(unsigned int mask, float mySum) {
+__device__ __forceinline__ double warpReduceSum(unsigned int mask, double mySum) {
   for (int offset = warpSize / 2; offset > 0; offset /= 2) {
     mySum += __shfl_down_sync(mask, mySum, offset);
   }
@@ -51,8 +51,8 @@ __device__ __forceinline__ float warpReduceSum(unsigned int mask, float mySum) {
 }
 
 template <unsigned int blockSize, bool nIsPow2>
-__global__ void reduce7(const float *__restrict__ g_idata, float *__restrict__ g_odata, unsigned int n) {
-  float *sdata = SharedMemory<float>();
+__global__ void reduce7(const double *__restrict__ g_idata, double *__restrict__ g_odata, unsigned int n) {
+  double *sdata = SharedMemory<double>();
 
   // perform first level of reduction,
   // reading from global memory, writing to shared memory
@@ -62,7 +62,7 @@ __global__ void reduce7(const float *__restrict__ g_idata, float *__restrict__ g
   maskLength = (maskLength > 0) ? (32 - maskLength) : maskLength;
   const unsigned int mask = (0xffffffff) >> maskLength;
 
-  float mySum = 0;
+  double mySum = 0;
 
   // we reduce multiple elements per thread.  The number is determined by the
   // number of active thread blocks (via gridDim).  More blocks will result

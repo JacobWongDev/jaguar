@@ -8,11 +8,11 @@
 #define RATE 8
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
-#define FLOAT_ERROR 1
+#define MAX_ERROR 0.0000001
 
-void cc_cpu(int levels, float* error_matrix, float* cc_sums, unsigned int* cc_cardinality, float* codebook) {
-  float numerator = 0;
-  float denominator = 0;;
+void cc_cpu(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_cardinality, double* codebook) {
+  double numerator = 0;
+  double denominator = 0;;
   for(int j = 0; j < levels; j++) {
     for(int i = 0; i < levels; i++) {
       numerator += error_matrix[j + levels*i] * cc_sums[i];
@@ -26,7 +26,7 @@ void cc_cpu(int levels, float* error_matrix, float* cc_sums, unsigned int* cc_ca
   }
 }
 
-void omp_cc_cpu(int levels, float* error_matrix, float* cc_sums, unsigned int* cc_cardinality, float* codebook) {
+void omp_cc_cpu(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_cardinality, double* codebook) {
   omp_set_num_threads(12);
   #pragma omp parallel
   {
@@ -37,8 +37,8 @@ void omp_cc_cpu(int levels, float* error_matrix, float* cc_sums, unsigned int* c
     int lvl = remainder - id;
     unsigned int start = lvl > 0 ? id * (sums_per_thread + 1) : remainder * (sums_per_thread + 1) + (id - remainder) * sums_per_thread;
     unsigned int end = lvl > 0 ? start + sums_per_thread : start + sums_per_thread - 1;
-    float numerator = 0;
-    float denominator = 0;
+    double numerator = 0;
+    double denominator = 0;
     for(int j = start; j <= end; j++) {
       for(int i = 0; i < levels; i++) {
         numerator += error_matrix[j + levels*i] * cc_sums[i];
@@ -51,8 +51,8 @@ void omp_cc_cpu(int levels, float* error_matrix, float* cc_sums, unsigned int* c
   }
 }
 
-inline float polya_urn_error(int j, int i, int num_bits) {
-  float temp;
+inline double polya_urn_error(int j, int i, int num_bits) {
+  double temp;
   int x = j ^ i;
   int previous;
   if(x & 1 == 1) {
@@ -76,8 +76,8 @@ inline float polya_urn_error(int j, int i, int num_bits) {
   return temp;
 }
 
-float* compute_error_matrix(unsigned int levels) {
-  float* error_matrix = (float*) malloc(sizeof(float) * levels * levels);
+double* compute_error_matrix(unsigned int levels) {
+  double* error_matrix = (double*) malloc(sizeof(double) * levels * levels);
   for(int i = 0; i < levels; i++) {
       for(int j = 0; j < levels; j++) {
           error_matrix[j + i * levels] = polya_urn_error(j, i, RATE);
@@ -89,21 +89,21 @@ float* compute_error_matrix(unsigned int levels) {
 /**
  * Return an array of size TRAINING_SIZE containing values distributed according to N(0,1)
 */
-float* generate_normal_sequence() {
-  float* normal_sequence = (float*) malloc(TRAINING_SIZE * sizeof(float));
+double* generate_normal_sequence() {
+  double* normal_sequence = (double*) malloc(TRAINING_SIZE * sizeof(double));
   std::default_random_engine rng;
   rng.seed(31);
-  std::normal_distribution<float> distribution(10, 1);
+  std::normal_distribution<double> distribution(10, 1);
   for(int i = 0; i < TRAINING_SIZE; i++) {
       normal_sequence[i] = distribution(rng);
   }
   return normal_sequence;
 }
 
-void cc_correct(float* codebook_seq, float* codebook_mp, unsigned int levels) {
+void cc_correct(double* codebook_seq, double* codebook_mp, unsigned int levels) {
   bool correct = true;
   for(int i = 0; i < levels; i++) {
-    if(codebook_seq[i] != codebook_mp[i]) {
+    if(abs(codebook_seq[i] - codebook_mp[i]) > MAX_ERROR) {
       printf("The codebooks DO NOT match!\n");
       printf("Disagreement at %d: codebook_seq %f, codebook mp %f", i, codebook_seq[i], codebook_mp[i]);
       correct = false;
@@ -116,11 +116,11 @@ void cc_correct(float* codebook_seq, float* codebook_mp, unsigned int levels) {
 
 int main(int argc, char** argv) {
   const unsigned int levels = 1 << RATE;
-  float* training_sequence = generate_normal_sequence();
-  float* error_matrix = compute_error_matrix(levels);
-  float* codebook_seq = (float*) malloc(sizeof(float) * levels);
-  float* codebook_mp = (float*) malloc(sizeof(float) * levels);
-  float* cc_training_sums = (float*) calloc(levels, sizeof(float));
+  double* training_sequence = generate_normal_sequence();
+  double* error_matrix = compute_error_matrix(levels);
+  double* codebook_seq = (double*) malloc(sizeof(double) * levels);
+  double* codebook_mp = (double*) malloc(sizeof(double) * levels);
+  double* cc_training_sums = (double*) calloc(levels, sizeof(double));
   unsigned int* cc_cardinality = (unsigned int*) calloc(levels, sizeof(unsigned int));
   // intialize codebook to first <levels> training samples
   // initialize training_sums and cc_cardinality
@@ -128,8 +128,8 @@ int main(int argc, char** argv) {
   std::uniform_int_distribution<int> distribution(1, 100);
   rng.seed(31);
   for(int i = 0; i < levels; i++) {
-    cc_training_sums[i] = (float) distribution(rng);
-    cc_cardinality[i] = (float) distribution(rng);
+    cc_training_sums[i] = (double) distribution(rng);
+    cc_cardinality[i] = (double) distribution(rng);
   }
   /*****************************************************************************************
    * Tests for Centroid Condition

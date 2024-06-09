@@ -8,7 +8,7 @@
 #define RATE 8
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
-#define FLOAT_ERROR 1
+#define MAX_ERROR 0.0000001
 
 void check(cudaError_t error, const char* file, int line) {
   if(cudaSuccess != error) {
@@ -49,8 +49,8 @@ void getNumBlocksAndThreads(int n, int maxBlocks,
   threads = (n < maxThreads * 2) ? nextPow2((n + 1) / 2) : maxThreads;
   blocks = (n + (threads * 2 - 1)) / (threads * 2);
 
-  if ((float)threads * blocks >
-      (float)prop.maxGridSize[0] * prop.maxThreadsPerBlock) {
+  if ((double)threads * blocks >
+      (double)prop.maxGridSize[0] * prop.maxThreadsPerBlock) {
     printf("n is too large, please choose a smaller number!\n");
   }
   if (blocks > prop.maxGridSize[0]) {
@@ -73,13 +73,13 @@ void getNumBlocksAndThreads(int n, int maxBlocks,
 //! @param data       pointer to input data
 //! @param size       number of input data elements
 ////////////////////////////////////////////////////////////////////////////////
-float reduceCPU(float *data, int size) {
-  float sum = data[0];
-  float c = 0.0f;
+double reduceCPU(double *data, int size) {
+  double sum = data[0];
+  double c = 0.0f;
 
   for (int i = 1; i < size; i++) {
-    float y = data[i] - c;
-    float t = sum + y;
+    double y = data[i] - c;
+    double t = sum + y;
     c = (t - sum) - y;
     sum = t;
   }
@@ -94,16 +94,16 @@ bool isPow2(unsigned int x) {
 ////////////////////////////////////////////////////////////////////////////////
 // Wrapper function for kernel launch
 ////////////////////////////////////////////////////////////////////////////////
-void reduce(int size, int threads, int blocks, float *device_seq, float* device_res) {
+void reduce(int size, int threads, int blocks, double *device_seq, double* device_res) {
   dim3 dimBlock(threads, 1, 1);
   dim3 dimGrid(blocks, 1, 1);
 
   // when there is only one warp per block, we need to allocate two warps
   // worth of shared memory so that we don't index shared memory out of bounds
-  int smemSize = (threads <= 32) ? 2 * threads * sizeof(float) : threads * sizeof(float);
+  int smemSize = (threads <= 32) ? 2 * threads * sizeof(double) : threads * sizeof(double);
   // For reduce7 kernel we require only blockSize/warpSize
   // number of elements in shared memory
-  smemSize = ((threads / 32) + 1) * sizeof(float);
+  smemSize = ((threads / 32) + 1) * sizeof(double);
   if(isPow2(size)) {
     switch (threads) {
       case 1024:
@@ -221,13 +221,13 @@ void reduce(int size, int threads, int blocks, float *device_seq, float* device_
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-float distortion_cpu(unsigned int levels, float* training_sequence, float* error_matrix, float* codebook, unsigned int* cells) {
-  float d = 0;
-  float c = 0;
+double distortion_cpu(unsigned int levels, double* training_sequence, double* error_matrix, double* codebook, unsigned int* cells) {
+  double d = 0;
+  double c = 0;
   for(int i = 0; i < TRAINING_SIZE; i++) {
     for(int j = 0; j < levels; j++) {
-      float y = error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
-      float t = d + y;
+      double y = error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
+      double t = d + y;
       c = (t - d) - y;
       d = t;
     }
@@ -236,8 +236,8 @@ float distortion_cpu(unsigned int levels, float* training_sequence, float* error
 }
 
 
-inline float polya_urn_error(int j, int i, int num_bits) {
-  float temp;
+inline double polya_urn_error(int j, int i, int num_bits) {
+  double temp;
   int x = j ^ i;
   int previous;
   if(x & 1 == 1) {
@@ -261,8 +261,8 @@ inline float polya_urn_error(int j, int i, int num_bits) {
   return temp;
 }
 
-float* compute_error_matrix(unsigned int levels) {
-  float* error_matrix = (float*) malloc(sizeof(float) * levels * levels);
+double* compute_error_matrix(unsigned int levels) {
+  double* error_matrix = (double*) malloc(sizeof(double) * levels * levels);
   for(int i = 0; i < levels; i++) {
       for(int j = 0; j < levels; j++) {
           error_matrix[j + i * levels] = polya_urn_error(j, i, RATE);
@@ -274,33 +274,33 @@ float* compute_error_matrix(unsigned int levels) {
 /**
  * Return an array of size TRAINING_SIZE containing values distributed according to N(0,1)
 */
-float* generate_normal_sequence() {
-  float* normal_sequence = (float*) malloc(TRAINING_SIZE * sizeof(float));
+double* generate_normal_sequence() {
+  double* normal_sequence = (double*) malloc(TRAINING_SIZE * sizeof(double));
   std::default_random_engine rng;
   rng.seed(31);
-  std::normal_distribution<float> distribution(10, 1);
+  std::normal_distribution<double> distribution(10, 1);
   for(int i = 0; i < TRAINING_SIZE; i++) {
       normal_sequence[i] = distribution(rng);
   }
   return normal_sequence;
 }
 
-float distortion_reduce(float* device_reduce_sums) {
+double distortion_reduce(double* device_reduce_sums) {
   unsigned int maxThreads = 256;  // number of threads per block
   unsigned int maxBlocks = 64;
   int cpuFinalThreshold = 1;
   bool needReadBack = true;
   int threads, blocks;
   getNumBlocksAndThreads(TRAINING_SIZE, maxBlocks, maxThreads, blocks, threads);
-  float* device_res;
-  float* result = (float*) malloc(sizeof(float) * blocks);
-  checkCudaErrors(cudaMalloc((void **)&device_res, sizeof(float) * blocks));
-  // checkCudaErrors(cudaMemcpy(device_res, result, sizeof(float) * blocks, cudaMemcpyHostToDevice));
+  double* device_res;
+  double* result = (double*) malloc(sizeof(double) * blocks);
+  checkCudaErrors(cudaMalloc((void **)&device_res, sizeof(double) * blocks));
+  // checkCudaErrors(cudaMemcpy(device_res, result, sizeof(double) * blocks, cudaMemcpyHostToDevice));
 
   // Perform GPU reduction
-  float* device_intermediate;
-  float gpu_res=0;
-  checkCudaErrors(cudaMalloc((void **)&device_intermediate, sizeof(float) * blocks));
+  double* device_intermediate;
+  double gpu_res=0;
+  checkCudaErrors(cudaMalloc((void **)&device_intermediate, sizeof(double) * blocks));
 
   reduce(TRAINING_SIZE, threads, blocks, device_reduce_sums, device_res);
 
@@ -308,14 +308,14 @@ float distortion_reduce(float* device_reduce_sums) {
   while(s > cpuFinalThreshold) {
     int threads = 0, blocks = 0;
     getNumBlocksAndThreads(s, maxBlocks, maxThreads, blocks, threads);
-    checkCudaErrors(cudaMemcpy(device_intermediate, device_res, s * sizeof(float), cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cudaMemcpy(device_intermediate, device_res, s * sizeof(double), cudaMemcpyDeviceToDevice));
     reduce(s, threads, blocks, device_intermediate, device_res);
     s = (s + (threads * 2 - 1)) / (threads * 2);
   }
 
   if (s > 1) {
     // copy result from device to host
-    checkCudaErrors(cudaMemcpy(result, device_res, s * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(result, device_res, s * sizeof(double), cudaMemcpyDeviceToHost));
     for (int i = 0; i < s; i++) {
       gpu_res += result[i];
     }
@@ -324,7 +324,7 @@ float distortion_reduce(float* device_reduce_sums) {
 
   if (needReadBack) {
     // copy final sum from device to host
-    checkCudaErrors(cudaMemcpy(&gpu_res, device_res, sizeof(float), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(&gpu_res, device_res, sizeof(double), cudaMemcpyDeviceToHost));
   }
   free(result);
   checkCudaErrors(cudaFree(device_res));
@@ -334,9 +334,9 @@ float distortion_reduce(float* device_reduce_sums) {
 
 int main(int argc, char** argv) {
   const unsigned int levels = 1 << RATE;
-  float* training_sequence = generate_normal_sequence();
-  float* error_matrix = compute_error_matrix(levels);
-  float* codebook = (float*) malloc(sizeof(float) * levels);
+  double* training_sequence = generate_normal_sequence();
+  double* error_matrix = compute_error_matrix(levels);
+  double* codebook = (double*) malloc(sizeof(double) * levels);
   unsigned int* cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);;
   // intialize codebook to first <levels> training samples
   std::default_random_engine rng;
@@ -351,7 +351,7 @@ int main(int argc, char** argv) {
   /*
     Sequential distortion
   */
-  float d1 = 0;
+  double d1 = 0;
   auto start = std::chrono::high_resolution_clock::now();
   d1 = distortion_cpu(levels, training_sequence, error_matrix, codebook, cells);
   auto end = std::chrono::high_resolution_clock::now();
@@ -363,21 +363,21 @@ int main(int argc, char** argv) {
   /*
     CUDA-Accelerated distortion
   */
-  float d2 = 0;
-  float* device_error_matrix;
-  float* device_codebook;
-  float* device_training_seq;
-  float* device_reduce_sums;
+  double d2 = 0;
+  double* device_error_matrix;
+  double* device_codebook;
+  double* device_training_seq;
+  double* device_reduce_sums;
   unsigned int* device_cells;
-  checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **) &device_codebook, levels*sizeof(float)));
+  checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(double)));
+  checkCudaErrors(cudaMalloc((void **) &device_codebook, levels*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_cells, TRAINING_SIZE*sizeof(unsigned int)));
-  checkCudaErrors(cudaMalloc((void **) &device_training_seq, TRAINING_SIZE*sizeof(float)));
-  checkCudaErrors(cudaMalloc((void **) &device_reduce_sums, TRAINING_SIZE*sizeof(float)));
+  checkCudaErrors(cudaMalloc((void **) &device_training_seq, TRAINING_SIZE*sizeof(double)));
+  checkCudaErrors(cudaMalloc((void **) &device_reduce_sums, TRAINING_SIZE*sizeof(double)));
 
-  checkCudaErrors(cudaMemcpy(device_training_seq, training_sequence, TRAINING_SIZE*sizeof(float), cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(float), cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(float), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_training_seq, training_sequence, TRAINING_SIZE*sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_cells, cells, TRAINING_SIZE*sizeof(unsigned int), cudaMemcpyHostToDevice));
   start = std::chrono::high_resolution_clock::now();
   dim3 grid_size = {TRAINING_SIZE / WARP_SIZE, 1, 1};
@@ -389,6 +389,12 @@ int main(int argc, char** argv) {
   std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
   std::cout << "CUDA result took " << t.count() << "ns." << std::endl;
   std::cout << "Distortion: " << d2 << std::endl;
+  std::cout << ":::::::::::: Distortion Test ::::::::::::" << std::endl;
+  if(abs(d1 - d2) < MAX_ERROR) {
+    printf("Correctness test passed!\n");
+  } else {
+    printf("Correctness test failed!\n");
+  }
   checkCudaErrors(cudaFree(device_training_seq));
   checkCudaErrors(cudaFree(device_error_matrix));
   checkCudaErrors(cudaFree(device_codebook));
