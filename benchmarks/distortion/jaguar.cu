@@ -9,6 +9,7 @@
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
 #define MAX_ERROR 0.0000001
+#define ITER 10
 
 void check(cudaError_t error, const char* file, int line) {
   if(cudaSuccess != error) {
@@ -351,13 +352,23 @@ int main(int argc, char** argv) {
   /*
     Sequential distortion
   */
+  std::chrono::_V2::system_clock::time_point start, end;
+  std::chrono::milliseconds exec_time;
+  int sum = 0;
   double d1 = 0;
-  auto start = std::chrono::high_resolution_clock::now();
-  d1 = distortion_cpu(levels, training_sequence, error_matrix, codebook, cells);
-  auto end = std::chrono::high_resolution_clock::now();
-  auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
   std::cout << ":::::::::::: Performance CPU-only code ::::::::::::" << std::endl;
-  std::cout << "sequential result took " << t.count() << "ns." << std::endl;
+  for(int i = 0; i < ITER; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    d1 = distortion_cpu(levels, training_sequence, error_matrix, codebook, cells);
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "ms." << std::endl;
+    } else {
+      sum += exec_time.count();
+    }
+  }
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ms." << std::endl;
   std::cout << "Distortion: " << d1 << std::endl;
 
   /*
@@ -379,15 +390,23 @@ int main(int argc, char** argv) {
   checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_cells, cells, TRAINING_SIZE*sizeof(unsigned int), cudaMemcpyHostToDevice));
-  start = std::chrono::high_resolution_clock::now();
   dim3 grid_size = {TRAINING_SIZE / WARP_SIZE, 1, 1};
   dim3 block_size = {WARP_SIZE, 1, 1};
-  distortion_gather<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix, device_cells, device_reduce_sums);
-  d2 = distortion_reduce(device_reduce_sums);
-  end = std::chrono::high_resolution_clock::now();
-  t = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+  sum = 0;
   std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
-  std::cout << "CUDA result took " << t.count() << "ns." << std::endl;
+  for(int i = 0; i < ITER; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    distortion_gather<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix, device_cells, device_reduce_sums);
+    d2 = distortion_reduce(device_reduce_sums);
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "ms." << std::endl;
+    } else {
+      sum += exec_time.count();
+    }
+  }
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ms." << std::endl;
   std::cout << "Distortion: " << d2 << std::endl;
   std::cout << ":::::::::::: Distortion Test ::::::::::::" << std::endl;
   if(abs(d1 - d2) < MAX_ERROR) {

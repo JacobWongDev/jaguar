@@ -3,5 +3,5 @@
 make clean build
 cd build
 make
-./reduction
+./cosq_benchmark
 cd ..

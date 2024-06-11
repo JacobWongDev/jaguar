@@ -9,6 +9,7 @@
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
 #define MAX_ERROR 0.0000001
+#define ITER 10
 
 void cc_cpu(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_cardinality, double* codebook) {
   double numerator = 0;
@@ -144,34 +145,40 @@ int main(int argc, char** argv) {
   /*
     Sequential CC
   */
-  unsigned long int sum = 0;
-  for(int i = 0; i < 100; i++) {
-    auto start = std::chrono::high_resolution_clock::now();
-    cc_cpu(levels, error_matrix, cc_training_sums, cc_cardinality, codebook_seq);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    sum += t.count();
-  }
   std::cout << ":::::::::::: Performance CPU-only code ::::::::::::" << std::endl;
-  std::cout << "sequential result took " << sum / 100 << "ns on average (100 iters)." << std::endl;
+  std::chrono::_V2::system_clock::time_point start, end;
+  std::chrono::nanoseconds exec_time;
+  int sum = 0;
+  for(int i = 0; i < ITER; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    cc_cpu(levels, error_matrix, cc_training_sums, cc_cardinality, codebook_seq);
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "ns." << std::endl;
+    } else {
+        sum += exec_time.count();
+    }
+  }
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ns." << std::endl;
 
   /*
     OpenMP CC
   */
-
-  sum = 0;
-  int avg = 0;
-  for(int i = 0; i < 100; i++) {
-    auto start = std::chrono::high_resolution_clock::now();
-    omp_cc_cpu(levels, error_matrix, cc_training_sums, cc_cardinality, codebook_mp);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto t = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    sum += t.count();
-    if(i != 0) // ignore warmup
-      avg += t.count();
-  }
   std::cout << ":::::::::::: Performance OMP CPU-only code ::::::::::::" << std::endl;
-  std::cout << "OMP result took " << sum / 100 << "ns on average (100 iters). " << "After warmup (1), avg is " << avg /99 << "ns." << std::endl;
+  sum = 0;
+  for(int i = 0; i < ITER; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    omp_cc_cpu(levels, error_matrix, cc_training_sums, cc_cardinality, codebook_mp);
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "ns." << std::endl;
+    } else {
+        sum += exec_time.count();
+    }
+  }
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ns." << std::endl;
   free(codebook_seq);
   free(codebook_mp);
   free(cc_cardinality);

@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(reduction LANGUAGES CXX CUDA)
+project(cosq_benchmark LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 23)
 
 # Source Files
 set(SOURCE_FILES
-    jaguar.cu
+    cuda_cosq.cu
 )
 
 # Header Files

@@ -7,5 +7,5 @@
 # cd ..
 
 rm -rf cosq
-g++ -fopenmp jaguar.cpp -o cosq -O3
+g++ -fopenmp openmp_cosq.cpp -o cosq -O3
 ./cosq
