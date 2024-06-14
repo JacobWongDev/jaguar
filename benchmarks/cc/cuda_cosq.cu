@@ -1,6 +1,5 @@
 #include <random>
 #include <chrono>
-#include <iomanip>
 #include <iostream>
 #include "cosq.cuh"
 
@@ -143,7 +142,7 @@ int main(int argc, char **argv) {
     std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
     for(int i = 0; i < ITER; i++) {
         start = std::chrono::high_resolution_clock::now();
-        cc<levels><<<grid_size, block_size>>>(device_codebook, device_error_matrix, device_cc_training_sums, device_cc_cardinality);
+        cc<<<grid_size, block_size>>>(levels, device_codebook, device_error_matrix, device_cc_training_sums, device_cc_cardinality);
         end = std::chrono::high_resolution_clock::now();
         exec_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         if(i == 0) {

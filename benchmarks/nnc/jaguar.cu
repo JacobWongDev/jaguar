@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
   double* device_cc_training_sums;
   unsigned int* device_cc_cardinality;
   unsigned int* device_cells;
+  unsigned int smem_size = 2 * levels * sizeof(double);
   checkCudaErrors(cudaMalloc((void **) &device_training_seq, TRAINING_SIZE*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_codebook, levels*sizeof(double)));
@@ -212,7 +213,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemset(device_cc_training_sums, 0, levels*sizeof(double)));
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
-    nnc_e32<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix,
+    nnc_e32<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                               device_cells, device_cc_training_sums, device_cc_cardinality);
     checkCudaErrors(cudaMemcpy(cuda_cells, device_cells, TRAINING_SIZE*sizeof(double), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaMemcpy(cuda_cc_cardinality, device_cc_cardinality, levels*sizeof(unsigned int), cudaMemcpyDeviceToHost));
@@ -247,7 +248,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemset(device_cc_training_sums, 0, levels*sizeof(double)));
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
-    nnc_e32_v2<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix,
+    nnc_e32_v2<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                                 device_cells, device_cc_training_sums, device_cc_cardinality);
     checkCudaErrors(cudaMemcpy(cuda_cells, device_cells, TRAINING_SIZE*sizeof(double), cudaMemcpyDeviceToHost));
     checkCudaErrors(cudaMemcpy(cuda_cc_cardinality, device_cc_cardinality, levels*sizeof(unsigned int), cudaMemcpyDeviceToHost));
@@ -281,7 +282,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     grid_size = {TRAINING_SIZE, 1, 1};
     block_size = {32, 1, 1};
-    nnc_e32_v3<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix, device_cells);
+    nnc_e32_v3<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix, device_cells);
     grid_size = {levels, 1, 1};
     block_size = {32, 1, 1};
     cc_p1<levels><<<grid_size, block_size>>>(device_training_seq, device_cells, device_cc_training_sums, device_cc_cardinality);

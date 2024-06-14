@@ -30,10 +30,10 @@ __device__ double atomicAddDouble(double* address, double val)
  * - Then once the sum is computed, the minimum of all the sums is found using a reduction.
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
-template <unsigned int levels>
-__global__ void nnc_e32(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
-    __shared__ double s_codebook[levels];
-    __shared__ double s_sums[levels];
+__global__ void nnc_e32(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+    extern __shared__ double smem[];
+    double* s_codebook = smem;
+    double* s_sums = smem + levels;
     __shared__ unsigned int s_min_indices[WARP_SIZE];
     unsigned int t = threadIdx.x;
     double target = training_sequence[blockIdx.x];
@@ -97,10 +97,10 @@ __global__ void nnc_e32(double* training_sequence, double* codebook, double* err
  * - Then once the sum is computed, the minimum of all the sums is found using a reduction.
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
-template <unsigned int levels>
-__global__ void nnc_e32_v2(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
-    __shared__ double s_codebook[levels];
-    __shared__ double s_sums[levels];
+__global__ void nnc_e32_v2(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+    extern __shared__ double smem[];
+    double* s_codebook = smem;
+    double* s_sums = smem + levels;
     unsigned int t = threadIdx.x;
     double target = training_sequence[blockIdx.x];
     double sum = 0;
@@ -138,10 +138,10 @@ __global__ void nnc_e32_v2(double* training_sequence, double* codebook, double* 
     }
 }
 
-template <unsigned int levels>
-__global__ void nnc_e32_v3(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells) {
-    __shared__ double s_codebook[levels];
-    __shared__ double s_sums[levels];
+__global__ void nnc_e32_v3(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells) {
+    extern __shared__ double smem[];
+    double* s_codebook = smem;
+    double* s_sums = smem + levels;
     unsigned int t = threadIdx.x;
     double target = training_sequence[blockIdx.x];
     double sum = 0;

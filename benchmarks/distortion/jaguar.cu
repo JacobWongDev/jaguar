@@ -392,11 +392,13 @@ int main(int argc, char** argv) {
   checkCudaErrors(cudaMemcpy(device_cells, cells, TRAINING_SIZE*sizeof(unsigned int), cudaMemcpyHostToDevice));
   dim3 grid_size = {TRAINING_SIZE / WARP_SIZE, 1, 1};
   dim3 block_size = {WARP_SIZE, 1, 1};
+  unsigned int smem_size = sizeof(double) * levels;
   sum = 0;
   std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
   for(int i = 0; i < ITER; i++) {
     start = std::chrono::high_resolution_clock::now();
-    distortion_gather<levels><<<grid_size, block_size>>>(device_training_seq, device_codebook, device_error_matrix, device_cells, device_reduce_sums);
+    distortion_gather<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook,
+        device_error_matrix, device_cells, device_reduce_sums);
     d2 = distortion_reduce(device_reduce_sums);
     end = std::chrono::high_resolution_clock::now();
     exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);

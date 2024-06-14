@@ -1,13 +1,11 @@
 #include <cuda_device_runtime_api.h>
-#include <stdio.h>
 #define WARP_SIZE 32
 #define FULL_MASK 0xffffffff
 
 /*
     Each block handles 1 codebook index
 */
-template <unsigned int levels>
-__global__ void cc(double* codebook, double* error_matrix, double* cc_cell_sums, unsigned int* cc_cardinality) {
+__global__ void cc(unsigned int levels, double* codebook, double* error_matrix, double* cc_cell_sums, unsigned int* cc_cardinality) {
     unsigned int t = threadIdx.x;
     unsigned int sums_per_thread = levels / WARP_SIZE;
     unsigned int j = blockIdx.x;

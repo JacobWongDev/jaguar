@@ -4,9 +4,9 @@
 /*
     Each block handles 32 sums.
 */
-template <unsigned int levels>
-__global__ void distortion_gather(double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* intermediate) {
-    __shared__ double s_codebook[levels];
+__global__ void distortion_gather(unsigned int levels, double* training_sequence, double* codebook,
+    double* error_matrix, unsigned int* cells, double* intermediate) {
+    extern __shared__ double s_codebook[];
     unsigned int t = threadIdx.x;
     unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
     double target = training_sequence[idx];
