@@ -1,7 +1,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
-#include "cuda_util.hpp"
-#include "logger.hpp"
+#include "cuda_util.h"
+#include "spdlog/spdlog.h"
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -52,9 +52,8 @@ sSMtoArchName nGpuArchNameSM[] = {
 
 void check(cudaError_t error, const char* file, int line) {
     if(cudaSuccess != error) {
-        char buffer[500];
-        snprintf(buffer, 500, "CUDA error in %s: line %d code=%d(%s): %s\n", file, line, (unsigned int) error, cudaGetErrorName(error), cudaGetErrorString(error));
-        logger_send(buffer, ERROR);
+        spdlog::error("CUDA error in {:s}: line {:d} code={:d}({:s}): {:s}\n",
+                file, line, (unsigned int) error, cudaGetErrorName(error), cudaGetErrorString(error));
     }
 }
 
@@ -71,10 +70,8 @@ int _ConvertSMVer2Cores(int major, int minor) {
 
     // If we don't find the values, we default use the previous one
     // to run properly
-    printf(
-        "MapSMtoCores for SM %d.%d is undefined."
-        "  Default to use %d Cores/SM\n",
-        major, minor, nGpuArchCoresPerSM[index - 1].Cores);
+    spdlog::error("MapSMtoCores for SM {:d}.{:d} is undefined.", major, minor);
+    spdlog::error("Default to use {:d} Cores/SM", nGpuArchCoresPerSM[index - 1].Cores);
     return nGpuArchCoresPerSM[index - 1].Cores;
 }
 
@@ -90,10 +87,8 @@ const char* _ConvertSMVer2ArchName(int major, int minor) {
     }
     // If we don't find the values, we default use the previous one
     // to run properly
-    printf(
-        "MapSMtoArchName for SM %d.%d is undefined."
-        "  Default to use %s\n",
-        major, minor, nGpuArchNameSM[index - 1].name);
+    spdlog::error("MapSMtoArchName for SM {:d}.{:d} is undefined.", major, minor);
+    spdlog::error("Default to use {:s}", nGpuArchNameSM[index - 1].name);
     return nGpuArchNameSM[index - 1].name;
 }
 
@@ -110,7 +105,7 @@ int gpuGetMaxGflopsDeviceId() {
     uint64_t max_compute_perf = 0;
     checkCudaErrors(cudaGetDeviceCount(&device_count));
     if (device_count == 0) {
-        logger_send("gpuGetMaxGflopsDeviceId() CUDA error: no devices supporting CUDA!\n", ERROR);
+        spdlog::error("gpuGetMaxGflopsDeviceId() CUDA error: no devices supporting CUDA!\n");
     }
     // Find the best CUDA capable GPU device
     current_device = 0;
@@ -152,7 +147,7 @@ int gpuGetMaxGflopsDeviceId() {
         ++current_device;
     }
     if (devices_prohibited == device_count) {
-        logger_send("gpuGetMaxGflopsDeviceId() CUDA error: all devices have compute mode prohibited!\n", ERROR);
+        spdlog::error("gpuGetMaxGflopsDeviceId() CUDA error: all devices have compute mode prohibited!\n");
         return -1;
     }
     return max_perf_device;
@@ -161,23 +156,26 @@ int gpuGetMaxGflopsDeviceId() {
 bool cuda_init() {
     struct cudaDeviceProp properties;
     int device_id = gpuGetMaxGflopsDeviceId();
-    char success_message[1000];
     if (device_id == -1)
         return false;
     checkCudaErrors(cudaSetDevice(device_id));
     int major = 0;
     int minor = 0;
-    size_t device_heap_size = (size_t) 2 << 31;
-    checkCudaErrors(cudaDeviceSetLimit(cudaLimitMallocHeapSize, device_heap_size));
+    // size_t device_heap_size = (size_t) 2 << 31;
+    // checkCudaErrors(cudaDeviceSetLimit(cudaLimitMallocHeapSize, device_heap_size));
     checkCudaErrors(cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, device_id));
     checkCudaErrors(cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, device_id));
-    snprintf(success_message, 1000, "Found GPU Device %d! \"%s\" with compute capability %d.%d\n\n", device_id, _ConvertSMVer2ArchName(major, minor), major, minor);
-    logger_send(success_message, INFO);
+    spdlog::info("Found GPU Device {:d}!", device_id);
+    spdlog::info("Compute Architecture {:s}", _ConvertSMVer2ArchName(major, minor));
+    spdlog::info("Compute Capability {:d}.{:d}", major, minor);
     checkCudaErrors(cudaGetDeviceProperties(&properties, device_id));
-    snprintf(success_message, 1000, "Device Properties:\nName = %s\nTotal Global memory = %fGB\nMultiprocessors = %d",
-        properties.name,
-        (double) properties.totalGlobalMem * 0.000000001,
-        properties.multiProcessorCount);
-    logger_send(success_message, INFO);
+    spdlog::info("Device Properties:");
+    spdlog::info("Device name: {:s}", properties.name);
+    spdlog::info("Streaming Multiprocessors (SMs): {:d}", properties.multiProcessorCount);
+    spdlog::info("Warp size: {:d}", properties.warpSize);
+    spdlog::info("Maximum threads per block: {:d}", properties.maxThreadsPerBlock);
+    spdlog::info("Total Global memory: {:f}GB", properties.totalGlobalMem * 1e-9);
+    spdlog::info("Shared Memory per block: {:f}KB", properties.sharedMemPerBlock * 1e-3);
+    spdlog::info("Registers per block: {:d}", properties.regsPerBlock);
     return true;
 }

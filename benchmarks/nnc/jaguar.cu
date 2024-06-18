@@ -18,10 +18,9 @@ void check(cudaError_t error, const char* file, int line) {
 
 #define checkCudaErrors(error) check(error, __FILE__, __LINE__);
 
-unsigned int* nnc_cpu(double* training_sequence, double* codebook, int levels, double* error_matrix,
-                      double* cell_sums, double* cc_sums, unsigned int* cc_cardinality) {
+void nnc_cpu(unsigned int* cells, double* training_sequence, double* codebook, int levels, double* error_matrix,
+    double* cell_sums, double* cc_sums, unsigned int* cc_cardinality) {
   double min = __FLT_MAX__;
-  unsigned int* cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);
   int min_index = -1;
   double sum = 0;
   double c = 0;
@@ -51,7 +50,6 @@ unsigned int* nnc_cpu(double* training_sequence, double* codebook, int levels, d
     min_index = -1;
     min = __FLT_MAX__;
   }
-  return cells;
 }
 
 inline double polya_urn_error(int j, int i, int num_bits) {
@@ -174,7 +172,8 @@ int main(int argc, char** argv) {
   std::chrono::_V2::system_clock::time_point start, end;
   std::chrono::milliseconds exec_time;
   start = std::chrono::high_resolution_clock::now();
-  unsigned int* cpu_cells = nnc_cpu(training_sequence, codebook, levels, error_matrix, nnc_sums, cc_training_sums, cc_cardinality);
+  unsigned int* cpu_cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);
+  nnc_cpu(cpu_cells, training_sequence, codebook, levels, error_matrix, nnc_sums, cc_training_sums, cc_cardinality);
   end = std::chrono::high_resolution_clock::now();
   exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "The exec time is " << exec_time.count() << "ms." << std::endl;
