@@ -30,7 +30,8 @@ __device__ double atomicAddDouble(double* address, double val)
  * - Then once the sum is computed, the minimum of all the sums is found using a reduction.
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
-__global__ void nnc_e32(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+__global__ void nnc_e32(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix,
+        unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
     extern __shared__ double smem[];
     double* s_codebook = smem;
     double* s_sums = smem + levels;
@@ -97,7 +98,8 @@ __global__ void nnc_e32(unsigned int levels, double* training_sequence, double* 
  * - Then once the sum is computed, the minimum of all the sums is found using a reduction.
  * - Since this kernel is meant to be run on ONE WARP specifically, no __syncthreads() is required.
 */
-__global__ void nnc_e32_v2(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+__global__ void nnc_e32_v2(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix,
+        unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
     extern __shared__ double smem[];
     double* s_codebook = smem;
     double* s_sums = smem + levels;
@@ -209,5 +211,53 @@ __global__ void cc_p1(double* training_sequence, unsigned int* cells, double* cc
     if(t == 0) {
         cc_cardinality[target] = cardinality;
         cc_sums[target] = cell_sum;
+    }
+}
+
+__global__ void nnc_e32_v4(unsigned int levels, double* training_sequence, double* codebook,
+        double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+    extern __shared__ double smem[];
+    double* s_codebook = smem;
+    double* s_sums = smem + levels;
+    unsigned int t = threadIdx.x;
+    double target = training_sequence[blockIdx.x];
+    double sum = 0;
+    unsigned int num_sums = levels / WARP_SIZE;
+    unsigned int min_index = t;
+    double min_sum;
+    unsigned int shfl_min_index;
+    double shfl_min_sum;
+    // load codebook into shared mem
+    for(unsigned int k = 0; k < num_sums; k++) {
+        s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
+    }
+    for(unsigned int k = 0; k < num_sums; k++) {
+        for(unsigned int i = 0; i < levels; i++) {
+            sum += error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]);
+        }
+        s_sums[num_sums*t + k] = sum;
+        sum = 0;
+    }
+    min_sum = s_sums[min_index];
+    // Now, find minimum array INDEX of all the sums.
+    for(unsigned int k = 1; k < num_sums; k++) {
+        if(s_sums[min_index] > s_sums[WARP_SIZE*k + t]) {
+            min_index = WARP_SIZE*k + t;
+            min_sum = s_sums[min_index];
+        }
+    }
+    #pragma unroll
+    for(int offset = 16; offset > 0; offset /= 2) {
+        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
+        shfl_min_sum = __shfl_down_sync(FULL_MASK, min_sum, offset);
+        if(min_sum > shfl_min_sum) {
+            min_index = shfl_min_index;
+            min_sum = shfl_min_sum;
+        }
+    }
+    if(t == 0) {
+        cells[blockIdx.x] = min_index;
+        atomicAddDouble(cc_sums + min_index, target);
+        atomicAdd(cc_cardinal + min_index, 1);
     }
 }
