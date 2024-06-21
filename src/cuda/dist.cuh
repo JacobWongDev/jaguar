@@ -1,9 +1,19 @@
 #include <cuda_device_runtime_api.h>
 
-/*
-    Each block handles 32 sums.
-*/
-__global__ void distortion_gather(unsigned int levels, double* training_sequence, double* codebook,
+__global__ void distortion_gather_lt32(unsigned int levels, double* training_sequence, double* codebook,
+    double* error_matrix, unsigned int* cells, double* intermediate) {
+    unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
+    double target = training_sequence[idx];
+    unsigned int i_nnc = cells[idx];
+    double sum = 0;
+    // Perform summation
+    for(int j = 0; j < levels; j++) {
+        sum += error_matrix[j + levels*i_nnc] * (target - codebook[j]) * (target - codebook[j]);
+    }
+    intermediate[idx] = sum;
+}
+
+__global__ void distortion_gather_ge32(unsigned int levels, double* training_sequence, double* codebook,
     double* error_matrix, unsigned int* cells, double* intermediate) {
     extern __shared__ double s_codebook[];
     unsigned int t = threadIdx.x;

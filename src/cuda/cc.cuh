@@ -3,7 +3,7 @@
 /*
     Each block handles 1 codebook index
 */
-__global__ void cc(unsigned int levels, double* codebook, double* error_matrix, double* cc_cell_sums, unsigned int* cc_cardinality) {
+__global__ void cc_ge32(unsigned int levels, double* codebook, double* error_matrix, double* cc_cell_sums, unsigned int* cc_cardinality) {
     unsigned int t = threadIdx.x;
     unsigned int sums_per_thread = levels / WARP_SIZE;
     unsigned int j = blockIdx.x;
@@ -13,8 +13,6 @@ __global__ void cc(unsigned int levels, double* codebook, double* error_matrix, 
     for(unsigned int i = t*sums_per_thread; i < (t+1)*sums_per_thread; i++) {
         numerator += error_matrix[j + levels*i] * cc_cell_sums[i];
         denominator += error_matrix[j + levels*i] * cc_cardinality[i];
-        // numerator += __dadd_rn(__dmul_rn(error_matrix[j + levels*i], cc_cell_sums[i]), numerator);
-        // denominator += __dadd_rn(__dmul_rn(error_matrix[j + levels*i], cc_cardinality[i]), denominator);
     }
     // Reduction
     #pragma unroll

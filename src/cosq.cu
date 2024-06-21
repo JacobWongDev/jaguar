@@ -27,8 +27,10 @@ double* COSQ::Device::training_sequence;
 double* COSQ::Device::error_matrix;
 double* COSQ::Device::q_points;
 // NNC
-dim3 COSQ::Device::nnc_grid_size;
-dim3 COSQ::Device::nnc_block_size;
+dim3 COSQ::Device::nnc_ge32_grid_size;
+dim3 COSQ::Device::nnc_ge32_block_size;
+dim3 COSQ::Device::nnc_lt32_grid_size;
+dim3 COSQ::Device::nnc_lt32_block_size;
 unsigned int COSQ::Device::nnc_smem_size;
 unsigned int* COSQ::Device::q_cells;
 // CC
@@ -68,8 +70,10 @@ void COSQ::Device::init(double* training_sequence_, const unsigned int* training
   checkCudaErrors(cudaMemset(cc_cell_sums, 0, (*levels)*sizeof(double)));
 
   // CUDA kernel launch params
-  nnc_grid_size = {*training_size, 1, 1};
-  nnc_block_size = {WARP_SIZE, 1, 1};
+  nnc_ge32_grid_size = {*training_size, 1, 1};
+  nnc_ge32_block_size = {WARP_SIZE, 1, 1};
+  nnc_lt32_grid_size = {*training_size * COSQ::levels / WARP_SIZE, 1, 1};
+  nnc_lt32_block_size = {WARP_SIZE, 1, 1};
   nnc_smem_size = 2 * (*levels) * sizeof(double);
 
   cc_grid_size = {*levels, 1, 1};
@@ -169,10 +173,54 @@ void COSQ::compute_error_matrix() {
 //   free(temp);
 // }
 
-// /**
-//  * TODO
-//  */
-// void COSQ::sim_annealing() {}
+void COSQ::Device::nnc(unsigned int* levels) {
+  if(*levels >= WARP_SIZE) {
+    nnc_ge32<<<COSQ::Device::nnc_ge32_grid_size, COSQ::Device::nnc_ge32_block_size, COSQ::Device::nnc_smem_size>>>(*levels, COSQ::Device::training_sequence,
+        COSQ::Device::q_points, COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::cc_cell_sums, COSQ::Device::cc_cardinality);
+  } else {
+    nnc_lt32<<<COSQ::Device::nnc_lt32_grid_size, COSQ::Device::nnc_lt32_block_size>>>(*levels, COSQ::Device::training_sequence, COSQ::Device::q_points,
+        COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::cc_cell_sums, COSQ::Device::cc_cardinality);
+  }
+}
+
+void COSQ::cc_lt32(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_cardinality, double* codebook) {
+  double numerator = 0;
+  double denominator = 0;
+  for (int j = 0; j < levels; j++) {
+    for (int i = 0; i < levels; i++) {
+        numerator += error_matrix[j + levels * i] * cc_sums[i];
+    }
+    for (int i = 0; i < levels; i++) {
+        denominator += error_matrix[j + levels * i] * cc_cardinality[i];
+    }
+    codebook[j] = numerator / denominator;
+    numerator = 0;
+    denominator = 0;
+  }
+}
+
+void COSQ::cc(unsigned int* levels, double* cc_sums_lt32, unsigned int* cc_cardinal_lt32) {
+  if(*levels >= WARP_SIZE) {
+    cc_ge32<<<COSQ::Device::cc_grid_size, COSQ::Device::cc_block_size>>>(*levels, COSQ::Device::q_points, COSQ::Device::error_matrix,
+        COSQ::Device::cc_cell_sums, COSQ::Device::cc_cardinality);
+  } else {
+    checkCudaErrors(cudaMemcpy(cc_sums_lt32, COSQ::Device::cc_cell_sums, sizeof(double) * *levels, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(cc_cardinal_lt32, COSQ::Device::cc_cardinality, sizeof(unsigned int) * *levels, cudaMemcpyDeviceToHost));
+    cc_lt32(*levels, COSQ::error_matrix, cc_sums_lt32, cc_cardinal_lt32, COSQ::q_points);
+    checkCudaErrors(cudaMemcpy(COSQ::Device::q_points, COSQ::q_points, sizeof(double) * *levels, cudaMemcpyHostToDevice));
+  }
+}
+
+double COSQ::Device::distortion(unsigned int* levels) {
+  if(*levels >= WARP_SIZE) {
+    distortion_gather_ge32<<<COSQ::Device::dist_grid_size, COSQ::Device::dist_block_size, COSQ::Device::dist_smem_size>>>(*levels, COSQ::Device::training_sequence,
+        COSQ::Device::q_points, COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::reduction_sums);
+  } else {
+    distortion_gather_lt32<<<COSQ::Device::dist_grid_size, COSQ::Device::dist_block_size>>>(*levels, COSQ::Device::training_sequence,
+        COSQ::Device::q_points, COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::reduction_sums);
+  }
+  return distortion_reduce(COSQ::training_size, COSQ::Device::reduction_sums);
+}
 
 /**
  *
@@ -187,22 +235,24 @@ double* COSQ::train(double* training_sequence, const unsigned int* training_size
   for(int i = 0; i < levels; i++)
     q_points[i] = training_sequence[i];
   checkCudaErrors(cudaMemcpy(COSQ::Device::q_points, COSQ::q_points, levels * sizeof(double), cudaMemcpyHostToDevice));
+  // For sequential CC
+  double* cc_sums_lt32 = (double*) malloc(sizeof(double) * levels);
+  unsigned int* cc_cardinal_lt32 = (unsigned int*) malloc(sizeof(unsigned int) * levels);
   // COSQ algorithm
   while(true) {
-    nnc<<<COSQ::Device::nnc_grid_size, COSQ::Device::nnc_block_size, COSQ::Device::nnc_smem_size>>>(levels, COSQ::Device::training_sequence, COSQ::Device::q_points,
-        COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::cc_cell_sums, COSQ::Device::cc_cardinality);
-    cc<<<COSQ::Device::cc_grid_size, COSQ::Device::cc_block_size>>>(levels, COSQ::Device::q_points, COSQ::Device::error_matrix,
-        COSQ::Device::cc_cell_sums, COSQ::Device::cc_cardinality);
-    distortion_gather<<<COSQ::Device::dist_grid_size, COSQ::Device::dist_block_size, COSQ::Device::dist_smem_size>>>(levels, COSQ::Device::training_sequence,
-        COSQ::Device::q_points, COSQ::Device::error_matrix, COSQ::Device::q_cells, COSQ::Device::reduction_sums);
-    dist_curr = distortion_reduce(COSQ::training_size, COSQ::Device::reduction_sums);
+    Device::nnc(&levels);
+    COSQ::cc(&levels, cc_sums_lt32, cc_cardinal_lt32);
+    dist_curr = Device::distortion(&levels);
     spdlog::info("Distortion is {:f}", dist_curr);
     if((dist_prev - dist_curr) / dist_prev < THRESHOLD) {
       break;
-      // TODO: Return copy of COSQ::q_points
     }
     dist_prev = dist_curr;
     checkCudaErrors(cudaMemset(COSQ::Device::cc_cardinality, 0, (levels)*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(COSQ::Device::cc_cell_sums, 0, (levels)*sizeof(double)));
   }
+  // TODO: Return copy of COSQ::q_points
+  return nullptr;
+  free(cc_sums_lt32);
+  free(cc_cardinal_lt32);
 }

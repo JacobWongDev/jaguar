@@ -1,0 +1,86 @@
+       ___         ___           ___           ___           ___           ___     
+      /\  \       /\  \         /\  \         /\__\         /\  \         /\  \    
+      \:\  \     /::\  \       /::\  \       /:/  /        /::\  \       /::\  \   
+  ___ /::\__\   /:/\:\  \     /:/\:\  \     /:/  /        /:/\:\  \     /:/\:\  \  
+ /\  /:/\/__/  /::\~\:\  \   /:/  \:\  \   /:/  /  ___   /::\~\:\  \   /::\~\:\  \ 
+ \:\/:/  /    /:/\:\ \:\__\ /:/__/_\:\__\ /:/__/  /\__\ /:/\:\ \:\__\ /:/\:\ \:\__\
+  \::/  /     \/__\:\/:/  / \:\  /\ \/__/ \:\  \ /:/  / \/__\:\/:/  / \/_|::\/:/  /
+   \/__/           \::/  /   \:\ \:\__\    \:\  /:/  /       \::/  /     |:|::/  / 
+                   /:/  /     \:\/:/  /     \:\/:/  /        /:/  /      |:|\/__/  
+                  /:/  /       \::/  /       \::/  /        /:/  /       |:|  |    
+                  \/__/         \/__/         \/__/         \/__/         \|__|    
+::Channel Optimized Scalar Quantizer (COSQ)::                       (version 0.1.0)
+::Developer - Jacob Wong::
+===================================================================================
+
+[2024-06-21 00:25:15.793] [info] Found GPU Device 0!
+[2024-06-21 00:25:15.793] [info] Compute Architecture Turing
+[2024-06-21 00:25:15.793] [info] Compute Capability 7.5
+[2024-06-21 00:25:15.793] [info] Device Properties:
+[2024-06-21 00:25:15.793] [info] Device name: NVIDIA GeForce RTX 2070
+[2024-06-21 00:25:15.793] [info] Streaming Multiprocessors (SMs): 36
+[2024-06-21 00:25:15.793] [info] Warp size: 32
+[2024-06-21 00:25:15.793] [info] Maximum threads per block: 1024
+[2024-06-21 00:25:15.793] [info] Total Global memory: 8.589476GB
+[2024-06-21 00:25:15.793] [info] Shared Memory per block: 49.152000KB
+[2024-06-21 00:25:15.793] [info] Registers per block: 65536
+[2024-06-21 00:25:16.331] [info] Executing test on cells...
+[2024-06-21 00:25:16.334] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:16.341] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:16.341] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:16.341] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:16.402] [info] Distortion test passed! CPU 0.066593 vs. GPU 0.066593
+[2024-06-21 00:25:16.845] [info] Executing test on cells...
+[2024-06-21 00:25:16.848] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:16.855] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:16.855] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:16.856] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:16.915] [info] Distortion test passed! CPU 0.048952 vs. GPU 0.048952
+[2024-06-21 00:25:17.358] [info] Executing test on cells...
+[2024-06-21 00:25:17.361] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:17.367] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:17.368] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:17.368] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:17.429] [info] Distortion test passed! CPU 0.042962 vs. GPU 0.042962
+[2024-06-21 00:25:17.869] [info] Executing test on cells...
+[2024-06-21 00:25:17.872] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:17.878] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:17.878] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:17.879] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:17.939] [info] Distortion test passed! CPU 0.040221 vs. GPU 0.040221
+[2024-06-21 00:25:18.393] [info] Executing test on cells...
+[2024-06-21 00:25:18.396] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:18.403] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:18.403] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:18.403] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:18.465] [info] Distortion test passed! CPU 0.038662 vs. GPU 0.038662
+[2024-06-21 00:25:18.901] [info] Executing test on cells...
+[2024-06-21 00:25:18.904] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:18.911] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:18.911] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:18.911] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:18.972] [info] Distortion test passed! CPU 0.037649 vs. GPU 0.037649
+[2024-06-21 00:25:19.415] [info] Executing test on cells...
+[2024-06-21 00:25:19.418] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:19.425] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:19.425] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:19.425] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:19.485] [info] Distortion test passed! CPU 0.036926 vs. GPU 0.036926
+[2024-06-21 00:25:19.927] [info] Executing test on cells...
+[2024-06-21 00:25:19.929] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:19.936] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:19.936] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:19.937] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:19.996] [info] Distortion test passed! CPU 0.036404 vs. GPU 0.036404
+[2024-06-21 00:25:20.450] [info] Executing test on cells...
+[2024-06-21 00:25:20.453] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:20.460] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:20.460] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:20.461] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:20.520] [info] Distortion test passed! CPU 0.036010 vs. GPU 0.036010
+[2024-06-21 00:25:20.975] [info] Executing test on cells...
+[2024-06-21 00:25:20.977] [info] NNC CELLS TEST PASSED
+[2024-06-21 00:25:20.984] [info] Executing test cell cardinality and min sums...
+[2024-06-21 00:25:20.984] [info] NNC CC TEST PASSED
+[2024-06-21 00:25:20.984] [info] Skipping test, using sequential CC!
+[2024-06-21 00:25:21.046] [info] Distortion test passed! CPU 0.035711 vs. GPU 0.035711

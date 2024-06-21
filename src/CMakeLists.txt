@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 # Source Files
 set(SOURCE_FILES
     jaguar.cpp
-    test.cu
-    # cosq.cu
+    # test.cu
+    cosq.cu
     ext.cu
     util/cuda_util.cpp
 )
