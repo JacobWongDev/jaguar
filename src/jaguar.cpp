@@ -59,10 +59,10 @@ int main(int argc, char** argv) {
     if(init()) {
         // Prepare training sequence
         double* q_points = NULL;
-        unsigned int bit_rate = 6, training_size = 1 << 20;
+        unsigned int bit_rate = 3, training_size = 1 << 20;
         double* training_sequence = generate_normal_sequence(&training_size);
-        // Run COSQ algorithm
-        q_points = COSQ::train(training_sequence, &training_size, &bit_rate);
+        COSQ cosq(training_sequence, &training_size, &bit_rate);
+        q_points = cosq.train();
         // Write results
         free(training_sequence);
         free(q_points);
