@@ -195,22 +195,25 @@ double* split(double* training_sequence, int levels, double* error_matrix,
     sum += training_sequence[i];
   codebook[0] = sum / TRAINING_SIZE;
   // Splitting loop
-  for(int s_levels = 0; s_levels < RATE; s_levels++) {
-    printf("Levels is %d\n", (1 << s_levels));
-    memset(cc_cell_sums, 0, sizeof(double) * (1 << s_levels));
-    memset(cc_cell_cardinality, 0, sizeof(unsigned int) * (1 << s_levels));
-    compute_error_matrix(error_matrix, (1 << s_levels), s_levels);
-    s_nnc(training_sequence, codebook, 1 << s_levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
-    cc(1 << s_levels, error_matrix, cc_cell_sums, cc_cell_cardinality, codebook);
-    for(int i = 0; i < (1 << s_levels); i++) {
+  unsigned int rate = 0;
+  unsigned int s_levels = 1;
+  while(s_levels < levels) {
+    printArrays(codebook, s_codebook, s_levels);
+    printf("Levels is %d\n", s_levels);
+    for(int i = 0; i < s_levels; i++) {
       s_codebook[2*i] = codebook[i] - delta;
       s_codebook[2*i+1] = codebook[i] + delta;
     }
-    printArrays(codebook, s_codebook, 1 << s_levels);
-    // swap ptrs
     temp = codebook;
     codebook = s_codebook;
     s_codebook = temp;
+    s_levels <<= 1;
+    rate++;
+    memset(cc_cell_sums, 0, sizeof(double) * s_levels);
+    memset(cc_cell_cardinality, 0, sizeof(unsigned int) * s_levels);
+    compute_error_matrix(error_matrix, s_levels, rate);
+    s_nnc(training_sequence, codebook, s_levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
+    cc(s_levels, error_matrix, cc_cell_sums, cc_cell_cardinality, codebook);
   }
   free(s_codebook);
   std::cout << "Split generated codebook: [";

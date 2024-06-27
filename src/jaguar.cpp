@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
     if(init()) {
         // Prepare training sequence
         double* q_points = NULL;
-        unsigned int bit_rate = 3, training_size = 1 << 20;
+        unsigned int bit_rate = 7, training_size = 1 << 20;
+        spdlog::info("Training COSQ with bit rate {:d} and training size {:d}", bit_rate, training_size);
         double* training_sequence = generate_normal_sequence(&training_size);
         COSQ cosq(training_sequence, &training_size, &bit_rate);
         q_points = cosq.train();
