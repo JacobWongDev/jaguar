@@ -2,7 +2,7 @@
 
 __global__ void distortion_gather_lt32(unsigned int levels, double* training_sequence, double* codebook,
     double* error_matrix, unsigned int* cells, double* intermediate) {
-    unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
+    unsigned int idx = threadIdx.x + warpSize*blockIdx.x;
     double target = training_sequence[idx];
     unsigned int i_nnc = cells[idx];
     double sum = 0;
@@ -17,9 +17,9 @@ __global__ void distortion_gather_ge32(unsigned int levels, double* training_seq
     double* error_matrix, unsigned int* cells, double* intermediate) {
     extern __shared__ double s_codebook[];
     unsigned int t = threadIdx.x;
-    unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
+    unsigned int idx = threadIdx.x + warpSize*blockIdx.x;
     double target = training_sequence[idx];
-    unsigned int loads_per_thread = levels / WARP_SIZE;
+    unsigned int loads_per_thread = levels / warpSize;
     unsigned int i_nnc = cells[idx];
     double sum = 0;
     // load codebook into shared mem

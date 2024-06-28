@@ -22,7 +22,7 @@ __device__ double atomicAddDouble(double* address, double val)
 __global__ void nnc_lt32(unsigned int levels, double* training_sequence, double* codebook,
         double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
     unsigned int t = threadIdx.x;
-    unsigned int target_idx = t / levels + blockIdx.x * (WARP_SIZE / levels);
+    unsigned int target_idx = t / levels + blockIdx.x * (warpSize / levels);
     double target = training_sequence[target_idx];
     unsigned int l = t % levels;
     double min_sum = 0;
@@ -60,7 +60,7 @@ __global__ void nnc_ge32(unsigned int levels, double* training_sequence, double*
     unsigned int t = threadIdx.x;
     double target = training_sequence[blockIdx.x];
     double sum = 0;
-    unsigned int num_sums = levels / WARP_SIZE;
+    unsigned int num_sums = levels / warpSize;
     unsigned int min_index = t;
     unsigned int shfl_min_index;
     // load codebook into shared mem
@@ -76,8 +76,8 @@ __global__ void nnc_ge32(unsigned int levels, double* training_sequence, double*
     }
     // Now, find minimum array INDEX of all the sums.
     for(unsigned int k = 1; k < num_sums; k++) {
-        if(s_sums[min_index] > s_sums[WARP_SIZE*k + t]) {
-            min_index = WARP_SIZE*k + t;
+        if(s_sums[min_index] > s_sums[warpSize*k + t]) {
+            min_index = warpSize*k + t;
         }
     }
     #pragma unroll
@@ -97,7 +97,7 @@ __global__ void nnc_ge32(unsigned int levels, double* training_sequence, double*
 __global__ void s_nnc_lt32(unsigned int levels, double* training_sequence, double* codebook,
         double* error_matrix, double* cc_sums, unsigned int* cc_cardinal) {
     unsigned int t = threadIdx.x;
-    unsigned int target_idx = t / levels + blockIdx.x * (WARP_SIZE / levels);
+    unsigned int target_idx = t / levels + blockIdx.x * (warpSize / levels);
     double target = training_sequence[target_idx];
     unsigned int l = t % levels;
     double min_sum = 0;
@@ -134,7 +134,7 @@ __global__ void s_nnc_ge32(unsigned int levels, double* training_sequence, doubl
     unsigned int t = threadIdx.x;
     double target = training_sequence[blockIdx.x];
     double sum = 0;
-    unsigned int num_sums = levels / WARP_SIZE;
+    unsigned int num_sums = levels / warpSize;
     unsigned int min_index = t;
     unsigned int shfl_min_index;
     // load codebook into shared mem
@@ -150,8 +150,8 @@ __global__ void s_nnc_ge32(unsigned int levels, double* training_sequence, doubl
     }
     // Now, find minimum array INDEX of all the sums.
     for(unsigned int k = 1; k < num_sums; k++) {
-        if(s_sums[min_index] > s_sums[WARP_SIZE*k + t]) {
-            min_index = WARP_SIZE*k + t;
+        if(s_sums[min_index] > s_sums[warpSize*k + t]) {
+            min_index = warpSize*k + t;
         }
     }
     #pragma unroll

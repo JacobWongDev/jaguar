@@ -5,7 +5,7 @@
 */
 __global__ void cc_ge32(unsigned int levels, double* codebook, double* error_matrix, double* cc_cell_sums, unsigned int* cc_cardinality) {
     unsigned int t = threadIdx.x;
-    unsigned int sums_per_thread = levels / WARP_SIZE;
+    unsigned int sums_per_thread = levels / warpSize;
     unsigned int j = blockIdx.x;
     double numerator = 0;
     double denominator = 0;
