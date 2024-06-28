@@ -1,6 +1,6 @@
 #include "spdlog/spdlog.h"
-#include "util/cuda_util.h"
-#include "cosq.h"
+#include "../util/cuda_util.h"
+#include "test_cosq.h"
 #include <random>
 
 /**
@@ -58,15 +58,12 @@ double* generate_normal_sequence(unsigned int* training_size) {
 int main(int argc, char** argv) {
     if(init()) {
         // Prepare training sequence
-        unsigned int bit_rate = 5, training_size = 1 << 20;
-        double* q_points = (double*) malloc(sizeof(double) * (1 << bit_rate));
+        unsigned int bit_rate = 2, training_size = 1 << 20;
         spdlog::info("Training COSQ with bit rate {:d} and training size {:d}", bit_rate, training_size);
         double* training_sequence = generate_normal_sequence(&training_size);
         COSQ cosq(training_sequence, &training_size, &bit_rate);
-        cosq.train(q_points);
-        // Write results
+        cosq.train();
         free(training_sequence);
-        free(q_points);
         return EXIT_SUCCESS;
     } else {
         return EXIT_FAILURE;

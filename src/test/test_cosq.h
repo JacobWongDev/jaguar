@@ -1,4 +1,4 @@
-#include "util/cuda_util.h"
+#include "../util/cuda_util.h"
 
 #define POLYA_EPSILON 0
 #define POLYA_DELTA 0
@@ -64,7 +64,7 @@ class COSQ {
     public:
         COSQ(double* training_sequence, const unsigned int* training_size, const unsigned int* bit_rate);
         ~COSQ();
-        void train(double* target_q_points);
+        void train();
     private:
         Device* device;
         double* training_sequence;
@@ -73,6 +73,6 @@ class COSQ {
         unsigned int bit_rate;
         double* error_matrix;
         double* q_points;
-        void cosq_lt32(double* target_q_points);
-        void cosq_ge32(double* target_q_points);
+        void cosq_lt32();
+        void cosq_ge32();
 };

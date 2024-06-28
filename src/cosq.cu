@@ -184,11 +184,6 @@ COSQ::COSQ(double* training_sequence, const unsigned int* training_size, const u
     spdlog::error("Memory Allocation error: Failed to allocate memory for error_matrix!");
     return;
   }
-  COSQ::q_points = (double*) malloc(levels*sizeof(double));
-  if(COSQ::q_points == nullptr) {
-    spdlog::error("Memory Allocation error: Failed to allocate memory for q_points!");
-    return;
-  }
   device = new Device(this);
 }
 
@@ -257,7 +252,7 @@ void cc_lt32(unsigned int levels, double* error_matrix, double* cc_sums,
 /**
  *
  */
-double* COSQ::cosq_lt32() {
+void COSQ::cosq_lt32(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
   split.split_lt32();
@@ -286,16 +281,15 @@ double* COSQ::cosq_lt32() {
     }
     dist_prev = dist_curr;
   }
-  // TODO: Return copy of COSQ::q_points
-  return nullptr;
   free(cc_sums_lt32);
   free(cc_cardinal_lt32);
+  memcpy(target_q_points, q_points, sizeof(double) * levels);
 }
 
 /**
  *
  */
-double* COSQ::cosq_ge32() {
+void COSQ::cosq_ge32(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
   split.split_ge32();
@@ -319,21 +313,20 @@ double* COSQ::cosq_ge32() {
     }
     dist_prev = dist_curr;
   }
-  // TODO: Return copy of COSQ::q_points
-  return nullptr;
+  checkCudaErrors(cudaMemcpy(q_points, device->q_points, levels * sizeof(double), cudaMemcpyDeviceToHost));
+  memcpy(target_q_points, q_points, sizeof(double) * levels);
 }
 
 /**
  *
  */
-double* COSQ::train() {
+void COSQ::train(double* target_q_points) {
   if(training_sequence == nullptr || training_size == 0) {
     spdlog::error("Failed to train COSQ: Invalid training sequence or size!");
-    return nullptr;
   }
   if(levels >= 32) {
-    return cosq_ge32();
+    cosq_ge32(target_q_points);
   } else {
-    return cosq_lt32();
+    cosq_lt32(target_q_points);
   }
 }

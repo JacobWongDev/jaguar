@@ -1,12 +1,12 @@
-#include "cosq.h"
+#include "test_cosq.h"
 #include <stdlib.h>
 #include <float.h>
 #include "spdlog/spdlog.h"
-#include "cuda/nnc.cuh"
-#include "cuda/cc.cuh"
-#include "cuda/dist.cuh"
-#include "cuda/nvidia.cuh"
-#include "ext.h"
+#include "../cuda/nnc.cuh"
+#include "../cuda/cc.cuh"
+#include "../cuda/dist.cuh"
+#include "../cuda/nvidia.cuh"
+#include "../ext.h"
 
 #define MAX_ERROR 0.0000001
 
@@ -184,11 +184,6 @@ COSQ::COSQ(double* training_sequence, const unsigned int* training_size, const u
   this->error_matrix = (double*) malloc(levels*levels*sizeof(double));
   if(COSQ::error_matrix == nullptr) {
     spdlog::error("Memory Allocation error: Failed to allocate memory for error_matrix!");
-    return;
-  }
-  COSQ::q_points = (double*) malloc(levels*sizeof(double));
-  if(COSQ::q_points == nullptr) {
-    spdlog::error("Memory Allocation error: Failed to allocate memory for q_points!");
     return;
   }
   device = new Device(this);
@@ -470,7 +465,7 @@ void split_test(double* codebook, double* training_sequence, unsigned int traini
 /**
  *
  */
-double* COSQ::cosq_lt32() {
+void COSQ::cosq_lt32() {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
   split.split_lt32();
@@ -527,7 +522,6 @@ double* COSQ::cosq_lt32() {
     memset(cpu_cc_cell_sums, 0, sizeof(double) * levels);
     memset(cpu_cc_cardinal, 0, sizeof(unsigned int) * levels);
   }
-  return nullptr;
   free(cpu_cells);
   free(cuda_cells);
   free(cuda_codebook);
@@ -538,7 +532,7 @@ double* COSQ::cosq_lt32() {
   free(cuda_cc_cardinality);
 }
 
-double* COSQ::cosq_ge32() {
+void COSQ::cosq_ge32() {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
   split.split_ge32();
@@ -595,7 +589,6 @@ double* COSQ::cosq_ge32() {
     memset(cpu_cc_cell_sums, 0, sizeof(double) * levels);
     memset(cpu_cc_cardinal, 0, sizeof(unsigned int) * levels);
   }
-  return nullptr;
   free(cpu_cells);
   free(cuda_cells);
   free(cuda_codebook);
@@ -609,14 +602,13 @@ double* COSQ::cosq_ge32() {
 /**
  *
  */
-double* COSQ::train() {
+void COSQ::train() {
   if(training_sequence == nullptr || training_size == 0) {
     spdlog::error("Failed to train COSQ: Invalid training sequence or size!");
-    return nullptr;
   }
   if(levels >= 32) {
-    return cosq_ge32();
+    cosq_ge32();
   } else {
-    return cosq_lt32();
+    cosq_lt32();
   }
 }
