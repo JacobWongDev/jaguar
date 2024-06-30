@@ -209,8 +209,6 @@ int main(int argc, char** argv) {
   std::cout << ":::::::::::: Performance nnc_e32_v4 ::::::::::::" << std::endl;
   // reset
   int sum = 0;
-  checkCudaErrors(cudaFree(device_cells));
-  checkCudaErrors(cudaMalloc((void **) &device_cells, TRAINING_SIZE*sizeof(double)));
   dim3 grid_size = {TRAINING_SIZE * levels / WARP_SIZE, 1, 1};
   dim3 block_size = {32, 1, 1};
   for(int i = 0; i < ITER; i++) {
@@ -219,6 +217,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     nnc_br_sm<<<grid_size, block_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                                 device_cells, device_cc_training_sums, device_cc_cardinality);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if(i == 0) {

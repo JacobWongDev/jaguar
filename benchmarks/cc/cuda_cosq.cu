@@ -143,6 +143,7 @@ int main(int argc, char **argv) {
     for(int i = 0; i < ITER; i++) {
         start = std::chrono::high_resolution_clock::now();
         cc<<<grid_size, block_size>>>(levels, device_codebook, device_error_matrix, device_cc_training_sums, device_cc_cardinality);
+        cudaDeviceSynchronize();
         end = std::chrono::high_resolution_clock::now();
         exec_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         if(i == 0) {

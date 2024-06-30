@@ -400,6 +400,7 @@ int main(int argc, char** argv) {
     distortion_gather<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook,
         device_error_matrix, device_cells, device_reduce_sums);
     d2 = distortion_reduce(device_reduce_sums);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if(i == 0) {

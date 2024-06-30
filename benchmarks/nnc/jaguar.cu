@@ -217,6 +217,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     nnc_e32<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                               device_cells, device_cc_training_sums, device_cc_cardinality);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if(i == 0) {
@@ -249,6 +250,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     nnc_e32_v2<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                                 device_cells, device_cc_training_sums, device_cc_cardinality);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if(i == 0) {
@@ -282,6 +284,7 @@ int main(int argc, char** argv) {
     grid_size = {levels, 1, 1};
     block_size = {32, 1, 1};
     cc_p1<levels><<<grid_size, block_size>>>(device_training_seq, device_cells, device_cc_training_sums, device_cc_cardinality);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if(i == 0) {
@@ -314,6 +317,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     nnc_e32_v4<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
                                                 device_cells, device_cc_training_sums, device_cc_cardinality);
+    cudaDeviceSynchronize();
     end = std::chrono::high_resolution_clock::now();
     exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     if(i == 0) {

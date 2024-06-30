@@ -3,22 +3,23 @@
 #include <float.h>
 #include <iostream>
 #include <cstring>
+#include <chrono>
 
-#define TRAINING_SIZE (1 << 20)
+int training_size;
+int rate;
 #define POLYA_DELTA 0
 #define POLYA_EPSILON 0
-#define RATE 4
-#define THRESHOLD 0.001
+#define THRESHOLD 0.01
 
 /**
- * Return an array of size TRAINING_SIZE containing values distributed according to N(0,1)
+ * Return an array of size training_size containing values distributed according to N(0,1)
 */
 double* generate_normal_sequence() {
-    double* normal_sequence = (double*) malloc(TRAINING_SIZE * sizeof(double));
+    double* normal_sequence = (double*) malloc(training_size * sizeof(double));
     std::default_random_engine rng;
     rng.seed(31);
     std::normal_distribution<double> distribution(0, 1);
-    for(int i = 0; i < TRAINING_SIZE; i++) {
+    for(int i = 0; i < training_size; i++) {
         normal_sequence[i] = distribution(rng);
     }
     return normal_sequence;
@@ -74,7 +75,7 @@ void s_nnc(double* training_sequence, double* codebook, int levels, double* erro
   int min_index = -1;
   double sum = 0;
   double c = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++) {
+  for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
@@ -106,7 +107,7 @@ void nnc(unsigned int* cells, double* training_sequence, double* codebook, int l
   int min_index = -1;
   double sum = 0;
   double c = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++) {
+  for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
@@ -152,7 +153,7 @@ void cc(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_card
 double distortion(unsigned int levels, double* training_sequence, double* error_matrix, double* codebook, unsigned int* cells) {
   double d = 0;
   double c = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++) {
+  for(int i = 0; i < training_size; i++) {
     for(int j = 0; j < levels; j++) {
       double y = error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
       double t = d + y;
@@ -160,7 +161,7 @@ double distortion(unsigned int levels, double* training_sequence, double* error_
       d = t;
     }
   }
-  return d / TRAINING_SIZE;
+  return d / training_size;
 }
 
 /**
@@ -191,15 +192,13 @@ double* split(double* training_sequence, int levels, double* error_matrix,
   double* codebook = (double*) malloc(sizeof(double) * levels);
   // Compute centroid of training sequence
   double sum = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++)
+  for(int i = 0; i < training_size; i++)
     sum += training_sequence[i];
-  codebook[0] = sum / TRAINING_SIZE;
+  codebook[0] = sum / training_size;
   // Splitting loop
   unsigned int rate = 0;
   unsigned int s_levels = 1;
   while(s_levels < levels) {
-    printArrays(codebook, s_codebook, s_levels);
-    printf("Levels is %d\n", s_levels);
     for(int i = 0; i < s_levels; i++) {
       s_codebook[2*i] = codebook[i] - delta;
       s_codebook[2*i+1] = codebook[i] + delta;
@@ -216,64 +215,57 @@ double* split(double* training_sequence, int levels, double* error_matrix,
     cc(s_levels, error_matrix, cc_cell_sums, cc_cell_cardinality, codebook);
   }
   free(s_codebook);
-  std::cout << "Split generated codebook: [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << codebook[i] << ", ";
-  std::cout << codebook[levels - 1] << "]" << std::endl;
   return codebook;
 }
 
 void cosq(double* training_sequence) {
-  int levels = 1 << RATE;
+  int levels = 1 << rate;
   double dist_curr = 0, dist_prev = DBL_MAX;
   double* error_matrix = (double*) malloc(sizeof(double) * levels * levels);
-  unsigned int* cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);
+  unsigned int* cells = (unsigned int*) malloc(sizeof(unsigned int) * training_size);
   double* cc_cell_sums = (double*) malloc(sizeof(double) * levels);
   unsigned int* cc_cell_cardinality = (unsigned int*) malloc(sizeof(unsigned int) * levels);
   double* codebook = split(training_sequence, levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
-  compute_error_matrix(error_matrix, levels, RATE);
+  compute_error_matrix(error_matrix, levels, rate);
   // Lloyd Iteration
+  int iter=0;
   while(true) {
     memset(cc_cell_sums, 0, sizeof(double) * levels);
     memset(cc_cell_cardinality, 0, sizeof(unsigned int) * levels);
     nnc(cells, training_sequence, codebook, levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
     cc(levels, error_matrix, cc_cell_sums, cc_cell_cardinality, codebook);
     dist_curr = distortion(levels, training_sequence, error_matrix, codebook, cells);
-    std::cout << "Current distortion is " << dist_curr << std::endl;
+    iter++;
     if((dist_prev - dist_curr) / dist_prev < THRESHOLD) {
       break;
     }
     dist_prev = dist_curr;
   }
-  std::cout << "Results! [";
-  for(int i = 0; i < levels - 1; i++)
-    std::cout << codebook[i] << ", ";
-  std::cout << codebook[levels - 1] << "]" << std::endl;
-  std::cout << "Distortion is: " << dist_curr << std::endl;
+  std::cout << "Iters " << iter << std::endl;
   free(codebook);
   free(error_matrix);
 }
 
 int main(int argc, char** argv) {
-  printf("Training %d-bit normal quantizer for polya channel delta %f, epsilon %f\n", RATE, POLYA_DELTA, POLYA_EPSILON);
+  rate = atoi(argv[1]);
+  training_size = atoi(argv[2]);
+  printf("Training %d-bit normal quantizer for polya channel delta %f, epsilon %f\n", rate, POLYA_DELTA, POLYA_EPSILON);
   double* normal = generate_normal_sequence();
-  // Verify 0 mean and unit variance::
-  double sum = 0;
-  double n_avg = 0;
-  double n_var = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++)
-      sum += normal[i];
-  n_avg = sum / TRAINING_SIZE;
-
-  std::cout << "Normal sequence E[X] = " << n_avg << std::endl;
-
-  // Variance
-  sum = 0;
-  for(int i = 0; i < TRAINING_SIZE; i++)
-      sum += pow(normal[i] - n_avg, 2);
-  n_var = sum/TRAINING_SIZE;
-  std::cout << "Normal sequence Var(X) = " << n_var << std::endl;
-  cosq(normal);
+  std::chrono::_V2::system_clock::time_point start, end;
+  std::chrono::seconds exec_time;
+  int sum = 0;
+  for(int i = 0; i < 11; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    cosq(normal);
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "s." << std::endl;
+    } else {
+      sum += exec_time.count();
+    }
+  }
+  std::cout << "The average is " << (float) sum / 10 << "s." << std::endl;
   free(normal);
   return 0;
 }
