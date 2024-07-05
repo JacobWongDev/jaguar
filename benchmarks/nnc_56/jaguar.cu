@@ -4,7 +4,6 @@
 #include <iostream>
 #include "cosq.cuh"
 
-#define RATE 1
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
 #define MAX_ERROR 0.0000001
@@ -77,11 +76,24 @@ inline double polya_urn_error(int j, int i, int num_bits) {
   return temp;
 }
 
-double* compute_error_matrix(unsigned int levels) {
+/**
+ * Computes channel transition matrix p(j|i) where
+ * i is the input symbol
+ * j is the output symbol
+ *
+ * To promote coalesced memory access on the GPU, the matrix
+ * is calculated in transposed form
+ *
+ * Typical: p(j|i) = mat[j + n*i]
+ * 
+ * Transposed access: p(j|i) = mat[i + n*j]
+ *
+ */
+double* compute_error_matrix(unsigned int levels, unsigned int rate) {
   double* error_matrix = (double*) malloc(sizeof(double) * levels * levels);
   for(int i = 0; i < levels; i++) {
       for(int j = 0; j < levels; j++) {
-          error_matrix[j + i * levels] = polya_urn_error(j, i, RATE);
+          error_matrix[i + j * levels] = polya_urn_error(j, i, rate);
       }
   }
   return error_matrix;
@@ -154,9 +166,10 @@ void nnc_cells_test(unsigned int levels, unsigned int* cuda_cells, unsigned int*
 }
 
 int main(int argc, char** argv) {
-  const unsigned int levels = 1 << RATE;
+  unsigned int rate = 5;
+  const unsigned int levels = 1 << rate;
   double* training_sequence = generate_normal_sequence();
-  double* error_matrix = compute_error_matrix(levels);
+  double* error_matrix = compute_error_matrix(levels, rate);
   double* codebook = (double*) malloc(sizeof(double) * levels);
   double* cc_training_sums = (double*) calloc(levels, sizeof(double));
   unsigned int* cc_cardinality = (unsigned int*) calloc(levels, sizeof(unsigned int));
@@ -201,36 +214,76 @@ int main(int argc, char** argv) {
   checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
 
-  std::chrono::microseconds exec_time_μs;
-
-  /*
-    Kernel nnc_e32_v4
+ /*
+    Kernel nnc1
   */
-  std::cout << ":::::::::::: Performance nnc_e32_v4 ::::::::::::" << std::endl;
-  // reset
-  int sum = 0;
-  dim3 grid_size = {TRAINING_SIZE * levels / WARP_SIZE, 1, 1};
-  dim3 block_size = {32, 1, 1};
+  std::cout << ":::::::::::: Performance nnc1 ::::::::::::" << std::endl;
+  unsigned int sum = 0;
+  unsigned int smem_size;
+  checkCudaErrors(cudaMemcpyToSymbol(c_q_points, codebook, levels*sizeof(double)));
+  checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
   for(int i = 0; i < ITER; i++) {
     start = std::chrono::high_resolution_clock::now();
     checkCudaErrors(cudaMemset(device_cc_training_sums, 0, levels*sizeof(double)));
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
-    nnc_br_sm<<<grid_size, block_size>>>(levels, device_training_seq, device_codebook, device_error_matrix,
-                                                device_cells, device_cc_training_sums, device_cc_cardinality);
-    cudaDeviceSynchronize();
+    dim3 grid_size = {TRAINING_SIZE, 1, 1};
+    dim3 block_size = {32, 1, 1};
+    smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+    nnc1<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_cells);
+    grid_size = {levels, 1, 1};
+    block_size = {64, 1, 1};
+    smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+    cc_p1<<<grid_size, block_size, smem_size>>>(device_training_seq, device_cells, device_cc_training_sums, device_cc_cardinality);
+    checkCudaErrors(cudaDeviceSynchronize());
     end = std::chrono::high_resolution_clock::now();
-    exec_time_μs = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if(i == 0) {
-      std::cout << "Warm-up time is " << exec_time_μs.count() << "μs." << std::endl;
+      std::cout << "Warm-up time is " << exec_time.count() << "ms." << std::endl;
     } else {
-      sum += exec_time_μs.count();
+      sum += exec_time.count();
     }
   }
   checkCudaErrors(cudaMemcpy(cuda_cells, device_cells, TRAINING_SIZE*sizeof(double), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(cuda_cc_cardinality, device_cc_cardinality, levels*sizeof(unsigned int), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(cuda_cc_training_sums, device_cc_training_sums, levels*sizeof(double), cudaMemcpyDeviceToHost));
-  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "μs." << std::endl;
-  std::cout << ":::::::::::: Tests for nnc_e32_v4 ::::::::::::" << std::endl;
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ms." << std::endl;
+  std::cout << ":::::::::::: Tests for nnc1 ::::::::::::" << std::endl;
+  nnc_cells_test(levels, cuda_cells, cpu_cells, nnc_sums);
+  nnc_cc_test(levels, training_sequence, cuda_cells, cuda_cc_cardinality, cuda_cc_training_sums);
+
+  /*
+    Kernel nnc2
+  */
+  std::cout << ":::::::::::: Performance nnc2 ::::::::::::" << std::endl;
+  sum = 0;
+  checkCudaErrors(cudaMemcpyToSymbol(c_q_points, codebook, levels*sizeof(double)));
+  checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
+  for(int i = 0; i < ITER; i++) {
+    start = std::chrono::high_resolution_clock::now();
+    checkCudaErrors(cudaMemset(device_cc_training_sums, 0, levels*sizeof(double)));
+    checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
+    dim3 block_size = {1024, 1, 1};
+    dim3 grid_size = {TRAINING_SIZE / (block_size.x / levels), 1, 1};
+    smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+    nnc2<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_cells);
+    grid_size = {levels, 1, 1};
+    block_size = {64, 1, 1};
+    smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+    cc_p1<<<grid_size, block_size, smem_size>>>(device_training_seq, device_cells, device_cc_training_sums, device_cc_cardinality);
+    checkCudaErrors(cudaDeviceSynchronize());
+    end = std::chrono::high_resolution_clock::now();
+    exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    if(i == 0) {
+      std::cout << "Warm-up time is " << exec_time.count() << "ms." << std::endl;
+    } else {
+      sum += exec_time.count();
+    }
+  }
+  checkCudaErrors(cudaMemcpy(cuda_cells, device_cells, TRAINING_SIZE*sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cuda_cc_cardinality, device_cc_cardinality, levels*sizeof(unsigned int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cuda_cc_training_sums, device_cc_training_sums, levels*sizeof(double), cudaMemcpyDeviceToHost));
+  std::cout << "The average of the remaining exec times is " << sum / (ITER - 1) << "ms." << std::endl;
+  std::cout << ":::::::::::: Tests for nnc2 ::::::::::::" << std::endl;
   nnc_cells_test(levels, cuda_cells, cpu_cells, nnc_sums);
   nnc_cc_test(levels, training_sequence, cuda_cells, cuda_cc_cardinality, cuda_cc_training_sums);
 
