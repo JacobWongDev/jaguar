@@ -64,7 +64,6 @@ __global__ void cc_p1(double* training_sequence, unsigned int* cells, double* cc
             cell_sum += training_sequence[t + k * blockDim.x];
         }
     }
-    __syncthreads();
     // reduce block
     #pragma unroll
     for(int offset = warpSize / 2; offset > 0; offset /= 2) {

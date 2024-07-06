@@ -38,7 +38,6 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, unsigned in
         }
         sum = 0;
     }
-    __syncthreads();
     // min reduction on block.
     // Each warp in block does a reduction
     unsigned int shfl_min_index;
@@ -101,7 +100,6 @@ __global__ void nnc2(unsigned int levels, double* training_sequence, unsigned in
         min_sum += tm[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
     }
     min_index = l;
-    __syncthreads();
     // Reduce
     unsigned int shfl_min_index;
     double shfl_min_sum;
@@ -160,7 +158,6 @@ __global__ void cc_p1(double* training_sequence, unsigned int* cells, double* cc
             cell_sum += training_sequence[t + k * blockDim.x];
         }
     }
-    __syncthreads();
     // reduce block
     #pragma unroll
     for(int offset = warpSize / 2; offset > 0; offset /= 2) {
