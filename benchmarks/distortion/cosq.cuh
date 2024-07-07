@@ -2,27 +2,52 @@
 #define WARP_SIZE 32
 
 /*
-    Each block handles 32 sums.
+  Each block handles <blockDim.x> number of sums.
 */
 __global__ void distortion_gather(unsigned int levels, double* training_sequence, double* codebook,
-    double* error_matrix, unsigned int* cells, double* intermediate) {
-    extern __shared__ double s_codebook[];
-    unsigned int t = threadIdx.x;
-    unsigned int idx = threadIdx.x + WARP_SIZE*blockIdx.x;
-    double target = training_sequence[idx];
-    unsigned int loads_per_thread = levels / WARP_SIZE;
-    unsigned int i_nnc = cells[idx];
-    double sum = 0;
-    // load codebook into shared mem
-    for(unsigned int k = 0; k < loads_per_thread; k++) {
-        s_codebook[loads_per_thread*t + k] = codebook[loads_per_thread*t + k];
+  double* error_matrix, unsigned int* cells, double* intermediate) {
+  extern __shared__ double s_codebook[];
+  unsigned int t = threadIdx.x;
+  unsigned int t_ = threadIdx.x + blockIdx.x * blockDim.x;
+  unsigned int r = levels / blockDim.x;
+  double target = training_sequence[t_];
+  unsigned int i_nnc = cells[t_];
+  double sum = 0;
+  if(r == 0) {
+    if(t < levels) {
+      s_codebook[t] = codebook[t];
     }
-    // Perform summation
-    for(int j = 0; j < levels; j++) {
-        sum += error_matrix[j + levels*i_nnc] * (target - s_codebook[j]) * (target - s_codebook[j]);
+  } else {
+    for(int i = 0; i < r; i++) {
+      s_codebook[t + blockDim.x * i] = codebook[t + blockDim.x * i];
     }
-    intermediate[idx] = sum;
+  }
+  __syncthreads();
+  //Perform summation
+  for(int j = 0; j < levels; j++) {
+    sum += error_matrix[i_nnc + levels*j] * (target - s_codebook[j]) * (target - s_codebook[j]);
+  }
+  // for(int j = 0; j < levels; j++) {
+  //   sum += error_matrix[i_nnc + levels*j] * (target - codebook[j]) * (target - codebook[j]);
+  // }
+  intermediate[t_] = sum;
 }
+
+/*
+  Each block handles <blockDim.x> number of sums.
+*/
+// __global__ void distortion_gather(unsigned int levels, double* training_sequence, double* codebook,
+//   double* error_matrix, unsigned int* cells, double* intermediate) {
+//   unsigned int t = threadIdx.x + blockIdx.x * blockDim.x;
+//   double target = training_sequence[t];
+//   unsigned int i_nnc = cells[t];
+//   double sum = 0;
+//   //Perform summation
+//   for(int j = 0; j < levels; j++) {
+//     sum += error_matrix[i_nnc + levels*j] * (target - codebook[j]) * (target - codebook[j]);
+//   }
+//   intermediate[t] = sum;
+// }
 
 /*******************************************************
  * NVIDIA

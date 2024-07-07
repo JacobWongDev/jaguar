@@ -5,11 +5,11 @@
 #include "cosq.cuh"
 
 #define TRAINING_SIZE (1 << 20)
-#define RATE 8
+#define RATE 1
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
 #define MAX_ERROR 0.0000001
-#define ITER 10
+#define ITER 11
 
 void check(cudaError_t error, const char* file, int line) {
   if(cudaSuccess != error) {
@@ -224,13 +224,9 @@ void reduce(int size, int threads, int blocks, double *device_seq, double* devic
 
 double distortion_cpu(unsigned int levels, double* training_sequence, double* error_matrix, double* codebook, unsigned int* cells) {
   double d = 0;
-  double c = 0;
   for(int i = 0; i < TRAINING_SIZE; i++) {
     for(int j = 0; j < levels; j++) {
-      double y = error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
-      double t = d + y;
-      c = (t - d) - y;
-      d = t;
+      d += error_matrix[cells[i] + levels*j] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]);
     }
   }
   return d / TRAINING_SIZE;
@@ -262,11 +258,24 @@ inline double polya_urn_error(int j, int i, int num_bits) {
   return temp;
 }
 
-double* compute_error_matrix(unsigned int levels) {
+/**
+ * Computes channel transition matrix p(j|i) where
+ * i is the input symbol
+ * j is the output symbol
+ *
+ * To promote coalesced memory access on the GPU, the matrix
+ * is calculated in transposed form
+ *
+ * Typical: p(j|i) = mat[j + n*i]
+ *
+ * Transposed access: p(j|i) = mat[i + n*j]
+ *
+ */
+double* compute_error_matrix(unsigned int levels, unsigned int rate) {
   double* error_matrix = (double*) malloc(sizeof(double) * levels * levels);
   for(int i = 0; i < levels; i++) {
       for(int j = 0; j < levels; j++) {
-          error_matrix[j + i * levels] = polya_urn_error(j, i, RATE);
+          error_matrix[i + j * levels] = polya_urn_error(j, i, rate);
       }
   }
   return error_matrix;
@@ -334,9 +343,10 @@ double distortion_reduce(double* device_reduce_sums) {
 }
 
 int main(int argc, char** argv) {
-  const unsigned int levels = 1 << RATE;
+  unsigned int rate = 5;
+  const unsigned int levels = 1 << rate;
   double* training_sequence = generate_normal_sequence();
-  double* error_matrix = compute_error_matrix(levels);
+  double* error_matrix = compute_error_matrix(levels, rate);
   double* codebook = (double*) malloc(sizeof(double) * levels);
   unsigned int* cells = (unsigned int*) malloc(sizeof(unsigned int) * TRAINING_SIZE);;
   // intialize codebook to first <levels> training samples
@@ -390,8 +400,8 @@ int main(int argc, char** argv) {
   checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_cells, cells, TRAINING_SIZE*sizeof(unsigned int), cudaMemcpyHostToDevice));
-  dim3 grid_size = {TRAINING_SIZE / WARP_SIZE, 1, 1};
-  dim3 block_size = {WARP_SIZE, 1, 1};
+  dim3 block_size = {1024, 1, 1};
+  dim3 grid_size = {TRAINING_SIZE / block_size.x, 1, 1};
   unsigned int smem_size = sizeof(double) * levels;
   sum = 0;
   std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
@@ -399,8 +409,10 @@ int main(int argc, char** argv) {
     start = std::chrono::high_resolution_clock::now();
     distortion_gather<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook,
         device_error_matrix, device_cells, device_reduce_sums);
+    // distortion_gather<<<grid_size, block_size>>>(levels, device_training_seq, device_codebook,
+    //     device_error_matrix, device_cells, device_reduce_sums);
     d2 = distortion_reduce(device_reduce_sums);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     end = std::chrono::high_resolution_clock::now();
     exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if(i == 0) {
