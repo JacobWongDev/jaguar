@@ -85,7 +85,7 @@ inline double polya_urn_error(int j, int i, int num_bits) {
  * is calculated in transposed form
  *
  * Typical: p(j|i) = mat[j + n*i]
- * 
+ *
  * Transposed access: p(j|i) = mat[i + n*j]
  *
  */
@@ -195,13 +195,13 @@ int main(int argc, char** argv) {
     CUDA-Accelerated NNC
   */
   double* device_training_seq;
-  // double* device_error_matrix;
+  double* device_error_matrix;
   double* device_codebook;
   double* device_cc_training_sums;
   unsigned int* device_cc_cardinality;
   unsigned int* device_cells;
   checkCudaErrors(cudaMalloc((void **) &device_training_seq, TRAINING_SIZE*sizeof(double)));
-  // checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(double)));
+  checkCudaErrors(cudaMalloc((void **) &device_error_matrix, levels*levels*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_codebook, levels*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_cc_training_sums, levels*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &device_cc_cardinality, levels*sizeof(unsigned int)));
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
   unsigned int* cuda_cc_cardinality = (unsigned int*) malloc(sizeof(unsigned int) * levels);
 
   checkCudaErrors(cudaMemcpy(device_training_seq, training_sequence, TRAINING_SIZE*sizeof(double), cudaMemcpyHostToDevice));
-  // checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(device_codebook, codebook, levels*sizeof(double), cudaMemcpyHostToDevice));
 
  /*
@@ -220,7 +220,6 @@ int main(int argc, char** argv) {
   std::cout << ":::::::::::: Performance nnc1 ::::::::::::" << std::endl;
   unsigned int sum = 0;
   unsigned int smem_size;
-  checkCudaErrors(cudaMemcpyToSymbol(c_q_points, codebook, levels*sizeof(double)));
   checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
   for(int i = 0; i < ITER; i++) {
     start = std::chrono::high_resolution_clock::now();
@@ -228,7 +227,7 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMemset(device_cc_cardinality, 0, levels*sizeof(unsigned int)));
     dim3 block_size = {1024, 1, 1};
     dim3 grid_size = {TRAINING_SIZE / (block_size.x / levels), 1, 1};
-    nnc1<<<grid_size, block_size>>>(levels, device_training_seq, device_cells);
+    nnc1<<<grid_size, block_size>>>(levels, device_training_seq, device_codebook, device_cells);
     grid_size = {levels, 1, 1};
     block_size = {64, 1, 1};
     smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));

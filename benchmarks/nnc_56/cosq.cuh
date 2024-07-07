@@ -5,7 +5,6 @@
 
 #define max_tm_size (64*64) // Reserve max amount for transition matrix possible.
 
-__constant__ double c_q_points[64]; // 64 x 64 transition matrix.
 __constant__ double tm[max_tm_size]; // 64 x 64 transition matrix.
 
 /**
@@ -15,7 +14,7 @@ __constant__ double tm[max_tm_size]; // 64 x 64 transition matrix.
  * A warp-level min reduction is performed across all warps, which is
  * then followed up by a final min reduction by a single warp.
  */
-__global__ void nnc1(unsigned int levels, double* training_sequence, unsigned int* cells) {
+__global__ void nnc1(unsigned int levels, double* training_sequence, double* q_points, unsigned int* cells) {
     unsigned int reduction_size = blockDim.x / warpSize; // Number of elements to be reduced by final warp
     extern __shared__ char smem[];
     double* s_sums = (double*) smem;
@@ -30,7 +29,7 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, unsigned in
         int l = t + k * blockDim.x;
         for(unsigned int i = 0; i < levels; i++) {
             // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
-            sum += tm[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
+            sum += tm[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
         }
         if(min_sum > sum) {
             min_sum = sum;
@@ -84,7 +83,7 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, unsigned in
  *
  * Since there are <levels> distinct summations, the warp-level reductions have to be organized
  */
-__global__ void nnc2(unsigned int levels, double* training_sequence, unsigned int* cells) {
+__global__ void nnc2(unsigned int levels, double* training_sequence, double* q_points, unsigned int* cells) {
     extern __shared__ char smem[];
     double* s_sums = (double*) smem;
     unsigned int* s_idx = (unsigned int*) (smem + (blockDim.x / warpSize) * sizeof(double));
@@ -97,7 +96,7 @@ __global__ void nnc2(unsigned int levels, double* training_sequence, unsigned in
     unsigned int l = t % levels;
     for(unsigned int i = 0; i < levels; i++) {
         // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
-        min_sum += tm[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
+        min_sum += tm[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
     }
     min_index = l;
     // Reduce

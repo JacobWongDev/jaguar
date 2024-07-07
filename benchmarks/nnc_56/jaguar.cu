@@ -85,7 +85,7 @@ inline double polya_urn_error(int j, int i, int num_bits) {
  * is calculated in transposed form
  *
  * Typical: p(j|i) = mat[j + n*i]
- * 
+ *
  * Transposed access: p(j|i) = mat[i + n*j]
  *
  */
@@ -220,7 +220,6 @@ int main(int argc, char** argv) {
   std::cout << ":::::::::::: Performance nnc1 ::::::::::::" << std::endl;
   unsigned int sum = 0;
   unsigned int smem_size;
-  checkCudaErrors(cudaMemcpyToSymbol(c_q_points, codebook, levels*sizeof(double)));
   checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
   for(int i = 0; i < ITER; i++) {
     start = std::chrono::high_resolution_clock::now();
@@ -229,7 +228,7 @@ int main(int argc, char** argv) {
     dim3 grid_size = {TRAINING_SIZE, 1, 1};
     dim3 block_size = {32, 1, 1};
     smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
-    nnc1<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_cells);
+    nnc1<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_cells);
     grid_size = {levels, 1, 1};
     block_size = {64, 1, 1};
     smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
@@ -256,7 +255,6 @@ int main(int argc, char** argv) {
   */
   std::cout << ":::::::::::: Performance nnc2 ::::::::::::" << std::endl;
   sum = 0;
-  checkCudaErrors(cudaMemcpyToSymbol(c_q_points, codebook, levels*sizeof(double)));
   checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
   for(int i = 0; i < ITER; i++) {
     start = std::chrono::high_resolution_clock::now();
@@ -265,7 +263,7 @@ int main(int argc, char** argv) {
     dim3 block_size = {1024, 1, 1};
     dim3 grid_size = {TRAINING_SIZE / (block_size.x / levels), 1, 1};
     smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
-    nnc2<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_cells);
+    nnc2<<<grid_size, block_size, smem_size>>>(levels, device_training_seq, device_codebook, device_cells);
     grid_size = {levels, 1, 1};
     block_size = {64, 1, 1};
     smem_size = (block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));

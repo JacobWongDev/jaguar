@@ -5,8 +5,6 @@
 #define POLYA_EPSILON 0.01
 #define POLYA_DELTA 0
 
-__constant__ double c_q_points[1024];
-
 /**
  * Nearest neighbour condition for levels >= 32 && >= blockDim.x.
  *
@@ -14,7 +12,7 @@ __constant__ double c_q_points[1024];
  * A warp-level min reduction is performed across all warps, which is
  * then followed up by a final min reduction by a single warp.
  */
-__global__ void nnc1(unsigned int levels, double* training_sequence, const double* error_matrix, unsigned int* cells) {
+__global__ void nnc1(unsigned int levels, double* training_sequence, const double* error_matrix, double* q_points, unsigned int* cells) {
     unsigned int reduction_size = blockDim.x / warpSize; // Number of elements to be reduced by final warp
     extern __shared__ char smem[];
     double* s_sums = (double*) smem;
@@ -29,7 +27,7 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, const doubl
         int l = t + k * blockDim.x;
         for(unsigned int i = 0; i < levels; i++) {
             // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
-            sum += error_matrix[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
+            sum += error_matrix[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
         }
         if(min_sum > sum) {
             min_sum = sum;
@@ -83,7 +81,7 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, const doubl
  *
  * Since there are <levels> distinct summations, the warp-level reductions have to be organized
  */
-__global__ void nnc2(unsigned int levels, double* training_sequence, const double* error_matrix, unsigned int* cells) {
+__global__ void nnc2(unsigned int levels, double* training_sequence, const double* error_matrix, double* q_points, unsigned int* cells) {
     extern __shared__ char smem[];
     double* s_sums = (double*) smem;
     unsigned int* s_idx = (unsigned int*) (smem + (blockDim.x / warpSize) * sizeof(double));
@@ -96,7 +94,7 @@ __global__ void nnc2(unsigned int levels, double* training_sequence, const doubl
     unsigned int l = t % levels;
     for(unsigned int i = 0; i < levels; i++) {
         // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
-        min_sum += error_matrix[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
+        min_sum += error_matrix[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
     }
     min_index = l;
     // Reduce

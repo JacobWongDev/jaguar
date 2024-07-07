@@ -4,8 +4,6 @@
 #define FULL_MASK 0xffffffff
 
 #define max_tm_size (16*16) // Reserve max amount for transition matrix possible.
-
-__constant__ double c_q_points[16]; // 64 x 64 transition matrix.
 __constant__ double tm[max_tm_size]; // 64 x 64 transition matrix.
 
 /**
@@ -13,7 +11,7 @@ __constant__ double tm[max_tm_size]; // 64 x 64 transition matrix.
  * Since <levels> is less than 32, each warp has to handle at least two codebook elements.
  * Each block will calculate blockDim.x / levels number of training elements
  */
-__global__ void nnc1(unsigned int levels, double* training_sequence, unsigned int* cells) {
+__global__ void nnc1(unsigned int levels, double* training_sequence, double* q_points, unsigned int* cells) {
     unsigned int t = threadIdx.x;
     unsigned int l = t % levels;
     unsigned int r = blockDim.x / levels;
@@ -23,7 +21,7 @@ __global__ void nnc1(unsigned int levels, double* training_sequence, unsigned in
     unsigned int min_index;
     for(unsigned int i = 0; i < levels; i++) {
         // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
-        min_sum += tm[l + i * levels] * (target - c_q_points[i]) * (target - c_q_points[i]);
+        min_sum += tm[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
     }
     min_index = l;
     // min reduction
