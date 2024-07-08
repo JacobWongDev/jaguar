@@ -13,50 +13,90 @@
 ::Developer - Jacob Wong::
 ===================================================================================
 
-[2024-06-26 21:41:14.609] [info] Found GPU Device 0!
-[2024-06-26 21:41:14.609] [info] Compute Architecture Turing
-[2024-06-26 21:41:14.609] [info] Compute Capability 7.5
-[2024-06-26 21:41:14.609] [info] Device Properties:
-[2024-06-26 21:41:14.609] [info] Device name: NVIDIA GeForce RTX 2070
-[2024-06-26 21:41:14.609] [info] Streaming Multiprocessors (SMs): 36
-[2024-06-26 21:41:14.609] [info] Warp size: 32
-[2024-06-26 21:41:14.609] [info] Maximum threads per block: 1024
-[2024-06-26 21:41:14.609] [info] Total Global memory: 8.589476GB
-[2024-06-26 21:41:14.609] [info] Shared Memory per block: 49.152000KB
-[2024-06-26 21:41:14.609] [info] Registers per block: 65536
-[2024-06-26 21:41:14.609] [info] Training COSQ with bit rate 7 and training size 1048576
-[2024-06-26 21:43:57.041] [info] Split: Performing correctness test
-[2024-06-26 21:43:57.041] [info] The codebooks match! Split Correctness test passed!
+[2024-07-08 14:06:43.594] [info] Found GPU Device 0!
+[2024-07-08 14:06:43.594] [info] Compute Architecture Turing
+[2024-07-08 14:06:43.594] [info] Compute Capability 7.5
+[2024-07-08 14:06:43.594] [info] Device Properties:
+[2024-07-08 14:06:43.594] [info] Device name: NVIDIA GeForce RTX 2070
+[2024-07-08 14:06:43.594] [info] Streaming Multiprocessors (SMs): 36
+[2024-07-08 14:06:43.594] [info] Warp size: 32
+[2024-07-08 14:06:43.594] [info] Maximum threads per block: 1024
+[2024-07-08 14:06:43.594] [info] Total Global memory: 8.589476GB
+[2024-07-08 14:06:43.594] [info] Shared Memory per block: 49.152000KB
+[2024-07-08 14:06:43.594] [info] Registers per block: 65536
+[2024-07-08 14:06:43.594] [info] Training COSQ with bit rate 7 and training size 1048576
+[2024-07-08 14:09:17.763] [info] Split: Performing correctness test
+[2024-07-08 14:09:17.763] [info] The codebooks match! Split Correctness test passed!
 
-[2024-06-26 21:45:53.782] [info] NNC: Executing test on cells...
-[2024-06-26 21:45:53.784] [info] NNC CELLS TEST PASSED
-[2024-06-26 21:45:53.791] [info] Executing test cell cardinality and min sums...
-[2024-06-26 21:45:53.791] [info] NNC CC TEST PASSED
-[2024-06-26 21:45:53.792] [info] NNC: Performing correctness test CC
-[2024-06-26 21:45:53.792] [info] The codebooks match! CC Correctness test passed!
+[2024-07-08 14:11:13.505] [info] NNC: Executing test on cells...
+[2024-07-08 14:11:13.507] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:11:13.514] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:11:13.514] [info] NNC CC TEST PASSED
+[2024-07-08 14:11:13.514] [info] NNC: Performing correctness test CC
+[2024-07-08 14:11:13.514] [info] The codebooks match! CC Correctness test passed!
 
-[2024-06-26 21:45:54.725] [info] Distortion test passed! CPU 0.000423 vs. GPU 0.000423
-[2024-06-26 21:47:50.678] [info] NNC: Executing test on cells...
-[2024-06-26 21:47:50.680] [info] NNC CELLS TEST PASSED
-[2024-06-26 21:47:50.686] [info] Executing test cell cardinality and min sums...
-[2024-06-26 21:47:50.686] [info] NNC CC TEST PASSED
-[2024-06-26 21:47:50.687] [info] NNC: Performing correctness test CC
-[2024-06-26 21:47:50.687] [info] The codebooks match! CC Correctness test passed!
+[2024-07-08 14:11:14.431] [info] Distortion test passed! CPU 0.000423 vs. GPU 0.000423
+[2024-07-08 14:11:14.431] [info] Distortion is 0.000423
+[2024-07-08 14:13:10.058] [info] NNC: Executing test on cells...
+[2024-07-08 14:13:10.061] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:13:10.068] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:13:10.068] [info] NNC CC TEST PASSED
+[2024-07-08 14:13:10.069] [info] NNC: Performing correctness test CC
+[2024-07-08 14:13:10.069] [info] The codebooks match! CC Correctness test passed!
 
-[2024-06-26 21:47:51.627] [info] Distortion test passed! CPU 0.000398 vs. GPU 0.000398
-[2024-06-26 21:49:47.830] [info] NNC: Executing test on cells...
-[2024-06-26 21:49:47.832] [info] NNC CELLS TEST PASSED
-[2024-06-26 21:49:47.837] [info] Executing test cell cardinality and min sums...
-[2024-06-26 21:49:47.838] [info] NNC CC TEST PASSED
-[2024-06-26 21:49:47.838] [info] NNC: Performing correctness test CC
-[2024-06-26 21:49:47.838] [info] The codebooks match! CC Correctness test passed!
+[2024-07-08 14:13:10.981] [info] Distortion test passed! CPU 0.000398 vs. GPU 0.000398
+[2024-07-08 14:13:10.981] [info] Distortion is 0.000398
+[2024-07-08 14:15:06.433] [info] NNC: Executing test on cells...
+[2024-07-08 14:15:06.435] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:15:06.442] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:15:06.442] [info] NNC CC TEST PASSED
+[2024-07-08 14:15:06.443] [info] NNC: Performing correctness test CC
+[2024-07-08 14:15:06.443] [info] The codebooks match! CC Correctness test passed!
 
-[2024-06-26 21:49:48.780] [info] Distortion test passed! CPU 0.000382 vs. GPU 0.000382
-[2024-06-26 21:51:46.250] [info] NNC: Executing test on cells...
-[2024-06-26 21:51:46.252] [info] NNC CELLS TEST PASSED
-[2024-06-26 21:51:46.258] [info] Executing test cell cardinality and min sums...
-[2024-06-26 21:51:46.258] [info] NNC CC TEST PASSED
-[2024-06-26 21:51:46.258] [info] NNC: Performing correctness test CC
-[2024-06-26 21:51:46.258] [info] The codebooks match! CC Correctness test passed!
+[2024-07-08 14:15:07.353] [info] Distortion test passed! CPU 0.000382 vs. GPU 0.000382
+[2024-07-08 14:15:07.353] [info] Distortion is 0.000382
+[2024-07-08 14:17:02.926] [info] NNC: Executing test on cells...
+[2024-07-08 14:17:02.929] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:17:02.936] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:17:02.936] [info] NNC CC TEST PASSED
+[2024-07-08 14:17:02.936] [info] NNC: Performing correctness test CC
+[2024-07-08 14:17:02.936] [info] The codebooks match! CC Correctness test passed!
 
-[2024-06-26 21:51:47.198] [info] Distortion test passed! CPU 0.000370 vs. GPU 0.000370
+[2024-07-08 14:17:03.856] [info] Distortion test passed! CPU 0.000370 vs. GPU 0.000370
+[2024-07-08 14:17:03.856] [info] Distortion is 0.000370
+[2024-07-08 14:18:59.286] [info] NNC: Executing test on cells...
+[2024-07-08 14:18:59.289] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:18:59.296] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:18:59.296] [info] NNC CC TEST PASSED
+[2024-07-08 14:18:59.296] [info] NNC: Performing correctness test CC
+[2024-07-08 14:18:59.296] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-08 14:19:00.228] [info] Distortion test passed! CPU 0.000361 vs. GPU 0.000361
+[2024-07-08 14:19:00.228] [info] Distortion is 0.000361
+[2024-07-08 14:20:55.722] [info] NNC: Executing test on cells...
+[2024-07-08 14:20:55.724] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:20:55.731] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:20:55.731] [info] NNC CC TEST PASSED
+[2024-07-08 14:20:55.731] [info] NNC: Performing correctness test CC
+[2024-07-08 14:20:55.731] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-08 14:20:56.657] [info] Distortion test passed! CPU 0.000354 vs. GPU 0.000354
+[2024-07-08 14:20:56.657] [info] Distortion is 0.000354
+[2024-07-08 14:22:52.205] [info] NNC: Executing test on cells...
+[2024-07-08 14:22:52.208] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:22:52.215] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:22:52.215] [info] NNC CC TEST PASSED
+[2024-07-08 14:22:52.215] [info] NNC: Performing correctness test CC
+[2024-07-08 14:22:52.215] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-08 14:22:53.132] [info] Distortion test passed! CPU 0.000349 vs. GPU 0.000349
+[2024-07-08 14:22:53.132] [info] Distortion is 0.000349
+[2024-07-08 14:24:49.817] [info] NNC: Executing test on cells...
+[2024-07-08 14:24:49.820] [info] NNC CELLS TEST PASSED
+[2024-07-08 14:24:49.826] [info] Executing test cell cardinality and min sums...
+[2024-07-08 14:24:49.827] [info] NNC CC TEST PASSED
+[2024-07-08 14:24:49.827] [info] NNC: Performing correctness test CC
+[2024-07-08 14:24:49.827] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-08 14:24:50.759] [info] Distortion test passed! CPU 0.000343 vs. GPU 0.000343
+[2024-07-08 14:24:50.759] [info] Distortion is 0.000343
