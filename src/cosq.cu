@@ -117,13 +117,13 @@ void Split::split_ge5() {
     checkCudaErrors(cudaMemcpy(device->q_points, cosq->q_points, sizeof(double) * s_levels, cudaMemcpyHostToDevice));
     compute_ctm(cosq->ctm, s_levels, rate);
     checkCudaErrors(cudaMemcpy(device->ctm, cosq->ctm, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
-    nnc_ge5_grid_size = {cosq->training_size / (nnc_ge5_block_size.x / cosq->levels), 1, 1};
+    nnc_ge5_grid_size = {cosq->training_size / (nnc_ge5_block_size.x / s_levels), 1, 1};
     nnc_ge5<<<nnc_ge5_grid_size, nnc_ge5_block_size, nnc_ge5_smem_size>>>
         (s_levels, device->training_sequence, device->ctm, device->q_points, device->q_cells);
     cc_gather_grid_size = {s_levels, 1, 1};
     cc_gather<<<cc_gather_grid_size, cc_gather_block_size, cc_gather_smem_size>>>
         (device->training_sequence, cosq->training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
-    cc_ge5_grid_size = {cosq->levels, 1, 1};
+    cc_ge5_grid_size = {s_levels, 1, 1};
     cc_ge5<<<cc_ge5_grid_size, cc_ge5_block_size, cc_ge5_smem_size>>>
         (s_levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
     checkCudaErrors(cudaMemcpy(cosq->q_points, device->q_points, s_levels * sizeof(double), cudaMemcpyDeviceToHost));
