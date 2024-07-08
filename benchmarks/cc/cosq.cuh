@@ -1,7 +1,10 @@
 #include <cuda_device_runtime_api.h>
 #define WARP_SIZE 32
 #define FULL_MASK 0xffffffff
-#include <stdio.h>
+
+#define max_tm_size (64*64) // Reserve max amount for transition matrix possible.
+
+__constant__ double tm[max_tm_size]; // 64 x 64 transition matrix.
 
 /*
     Each block computes 1 codebook element
@@ -50,7 +53,7 @@ __global__ void cc_gt5(unsigned int levels, double* codebook, double* error_matr
 
 /*
     Each block computes 1 codebook element
-    and levels >= blockDim.x.
+    and levels <= blockDim.x.
 */
 __global__ void cc_le5(unsigned int levels, double* codebook, double* error_matrix,
         double* cc_cell_sums, unsigned int* cc_cardinality) {
@@ -73,3 +76,24 @@ __global__ void cc_le5(unsigned int levels, double* codebook, double* error_matr
         codebook[blockIdx.x] = numerator / denominator;
     }
 }
+
+// __global__ void cc_le5(unsigned int levels, double* codebook, double* cc_cell_sums, unsigned int* cc_cardinality) {
+//     unsigned int t = threadIdx.x;
+//     unsigned int r = levels / blockDim.x;
+//     double numerator = 0;
+//     double denominator = 0;
+//     for(int k = 0; k < r; k++) {
+//         int l = t + r * k;
+//         numerator += tm[l + levels * blockIdx.x] * cc_cell_sums[l];
+//         denominator += tm[l + levels * blockIdx.x] * cc_cardinality[l];
+//     }
+//     // Now reduce warp
+//     #pragma unroll
+//     for(int offset = blockDim.x / 2; offset > 0; offset /= 2) {
+//         numerator += __shfl_down_sync(FULL_MASK, numerator, offset);
+//         denominator += __shfl_down_sync(FULL_MASK, denominator, offset);
+//     }
+//     if(t == 0) {
+//         codebook[blockIdx.x] = numerator / denominator;
+//     }
+// }

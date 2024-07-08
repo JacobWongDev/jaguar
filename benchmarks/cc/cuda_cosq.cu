@@ -157,6 +157,7 @@ int main(int argc, char **argv) {
     checkCudaErrors(cudaMemcpy(device_error_matrix, error_matrix, levels*levels*sizeof(double), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(device_cc_training_sums, cc_training_sums, levels*sizeof(double), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(device_cc_cardinality, cc_cardinality, levels*sizeof(unsigned int), cudaMemcpyHostToDevice));
+    // checkCudaErrors(cudaMemcpyToSymbol(tm, error_matrix, levels*levels*sizeof(double)));
     sum = 0;
     std::cout << ":::::::::::: Performance GPU-only code ::::::::::::" << std::endl;
     for(int i = 0; i < ITER; i++) {
@@ -164,6 +165,7 @@ int main(int argc, char **argv) {
             start = std::chrono::high_resolution_clock::now();
             dim3 block_size = {levels, 1, 1};
             dim3 grid_size = {levels, 1, 1};
+            // cc_le5<<<grid_size, block_size>>>(levels, device_codebook, device_cc_training_sums, device_cc_cardinality);
             cc_le5<<<grid_size, block_size>>>(levels, device_codebook, device_error_matrix, device_cc_training_sums, device_cc_cardinality);
             checkCudaErrors(cudaDeviceSynchronize());
             end = std::chrono::high_resolution_clock::now();
