@@ -1,40 +1,89 @@
 #include <cuda_device_runtime_api.h>
 #define FULL_MASK 0xffffffff
 
-__device__ double atomicAddDouble(double* address, double val)
-{
-    unsigned long long int* address_as_ull =
-                              (unsigned long long int*)address;
-    unsigned long long int old = *address_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old = atomicCAS(address_as_ull, assumed,
-                        __double_as_longlong(val +
-                               __longlong_as_double(assumed)));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return __longlong_as_double(old);
-}
-
-__global__ void nnc_lt32(unsigned int levels, double* training_sequence, double* codebook,
-        double* error_matrix, unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
+/**
+ * Nearest neighbour condition for levels >= 32 && < blockDim.x.
+ *
+ * Each thread in the block calculates 1 summation for the NNC condition
+ * A warp-level min reduction is performed across all warps, which is
+ * then followed up by a final min reduction by a single warp.
+ *
+ * Since there are <levels> distinct summations, the warp-level reductions have to be organized
+ */
+__global__ void nnc_ge5(unsigned int levels, double* training_sequence, const double* ctm, double* q_points, unsigned int* cells) {
+    extern __shared__ char smem[];
+    double* s_sums = (double*) smem;
+    unsigned int* s_idx = (unsigned int*) (smem + (blockDim.x / warpSize) * sizeof(double));
     unsigned int t = threadIdx.x;
-    unsigned int target_idx = t / levels + blockIdx.x * (warpSize / levels);
-    double target = training_sequence[target_idx];
-    unsigned int l = t % levels;
+    unsigned int r = blockDim.x / levels;
+    unsigned int e = t / levels;
+    double target = training_sequence[r*blockIdx.x + e];
     double min_sum = 0;
-    #pragma unroll
-    for(unsigned int j = 0; j < levels; j++) {
-        min_sum += error_matrix[j + levels*l] * (target - codebook[j]) * (target - codebook[j]);
+    unsigned int min_index;
+    unsigned int l = t % levels;
+    for(unsigned int i = 0; i < levels; i++) {
+        // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
+        min_sum += ctm[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
     }
-    // Minimum reduction
-    unsigned int min_index = l;
+    min_index = l;
+    // Reduce
     unsigned int shfl_min_index;
     double shfl_min_sum;
+    #pragma unroll
+    for(int offset = warpSize / 2; offset > 0; offset /= 2) {
+        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
+        shfl_min_sum = __shfl_down_sync(FULL_MASK, min_sum, offset);
+        if(min_sum > shfl_min_sum) {
+            min_index = shfl_min_index;
+            min_sum = shfl_min_sum;
+        }
+    }
+    if(t % warpSize == 0) {
+        s_sums[t / warpSize] = min_sum;
+        s_idx[t / warpSize] = min_index;
+    }
+    __syncthreads();
+    unsigned int reduction_size = levels / warpSize;
+    min_sum = l < reduction_size ? s_sums[l + reduction_size*e] : 0;
+    min_index = l < reduction_size ? s_idx[l + reduction_size*e] : 0;
+    // Now reduce final warp
+    if(l < reduction_size) {
+        #pragma unroll
+        for(int offset = reduction_size / 2; offset > 0; offset /= 2) {
+            shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
+            shfl_min_sum = __shfl_down_sync(FULL_MASK, min_sum, offset);
+            if(min_sum > shfl_min_sum) {
+                min_index = shfl_min_index;
+                min_sum = shfl_min_sum;
+            }
+        }
+    }
+    if(l == 0) {
+        cells[r*blockIdx.x + e] = min_index;
+    }
+}
 
+/**
+ * Nearest neighbour condition for levels <= 16 && blockSize >= 32.
+ * Since <levels> is less than 32, each warp has to handle at least two codebook elements.
+ * Each block will calculate blockDim.x / levels number of training elements
+ */
+__global__ void nnc_lt5(unsigned int levels, double* training_sequence, double* q_points, double* ctm, unsigned int* cells) {
+    unsigned int t = threadIdx.x;
+    unsigned int l = t % levels;
+    unsigned int r = blockDim.x / levels;
+    unsigned int e = t / levels;
+    double target = training_sequence[r*blockIdx.x + e];
+    double min_sum = 0;
+    unsigned int min_index;
+    for(unsigned int i = 0; i < levels; i++) {
+        // Transposed access: p(j|i) = mat[i + n*j] (coalesced access!)
+        min_sum += ctm[l + i * levels] * (target - q_points[i]) * (target - q_points[i]);
+    }
+    min_index = l;
+    // min reduction
+    unsigned int shfl_min_index;
+    double shfl_min_sum;
     #pragma unroll
     for(int offset = levels / 2; offset > 0; offset /= 2) {
         shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
@@ -44,125 +93,7 @@ __global__ void nnc_lt32(unsigned int levels, double* training_sequence, double*
             min_sum = shfl_min_sum;
         }
     }
-
     if(l == 0) {
-        cells[target_idx] = min_index;
-        atomicAddDouble(cc_sums + min_index, target);
-        atomicAdd(cc_cardinal + min_index, 1);
-    }
-}
-
-__global__ void nnc_ge32(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix,
-        unsigned int* cells, double* cc_sums, unsigned int* cc_cardinal) {
-    extern __shared__ double smem[];
-    double* s_codebook = smem;
-    double* s_sums = smem + levels;
-    unsigned int t = threadIdx.x;
-    double target = training_sequence[blockIdx.x];
-    double sum = 0;
-    unsigned int num_sums = levels / warpSize;
-    unsigned int min_index = t;
-    unsigned int shfl_min_index;
-    // load codebook into shared mem
-    for(unsigned int k = 0; k < num_sums; k++) {
-        s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
-    }
-    for(unsigned int k = 0; k < num_sums; k++) {
-        for(unsigned int i = 0; i < levels; i++) {
-            sum += error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]);
-        }
-        s_sums[num_sums*t + k] = sum;
-        sum = 0;
-    }
-    // Now, find minimum array INDEX of all the sums.
-    for(unsigned int k = 1; k < num_sums; k++) {
-        if(s_sums[min_index] > s_sums[warpSize*k + t]) {
-            min_index = warpSize*k + t;
-        }
-    }
-    #pragma unroll
-    for(int offset = 16; offset > 0; offset /= 2) {
-        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
-        if(s_sums[min_index] > s_sums[shfl_min_index]) {
-            min_index = shfl_min_index;
-        }
-    }
-    if(t == 0) {
-        cells[blockIdx.x] = min_index;
-        atomicAddDouble(cc_sums + min_index, target);
-        atomicAdd(cc_cardinal + min_index, 1);
-    }
-}
-
-__global__ void s_nnc_lt32(unsigned int levels, double* training_sequence, double* codebook,
-        double* error_matrix, double* cc_sums, unsigned int* cc_cardinal) {
-    unsigned int t = threadIdx.x;
-    unsigned int target_idx = t / levels + blockIdx.x * (warpSize / levels);
-    double target = training_sequence[target_idx];
-    unsigned int l = t % levels;
-    double min_sum = 0;
-    #pragma unroll
-    for(unsigned int j = 0; j < levels; j++) {
-        min_sum += error_matrix[j + levels*l] * (target - codebook[j]) * (target - codebook[j]);
-    }
-    // Minimum reduction
-    unsigned int min_index = l;
-    unsigned int shfl_min_index;
-    double shfl_min_sum;
-
-    #pragma unroll
-    for(int offset = levels / 2; offset > 0; offset /= 2) {
-        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
-        shfl_min_sum = __shfl_down_sync(FULL_MASK, min_sum, offset);
-        if(min_sum > shfl_min_sum) {
-            min_index = shfl_min_index;
-            min_sum = shfl_min_sum;
-        }
-    }
-
-    if(l == 0) {
-        atomicAddDouble(cc_sums + min_index, target);
-        atomicAdd(cc_cardinal + min_index, 1);
-    }
-}
-
-__global__ void s_nnc_ge32(unsigned int levels, double* training_sequence, double* codebook, double* error_matrix,
-        double* cc_sums, unsigned int* cc_cardinal) {
-    extern __shared__ double smem[];
-    double* s_codebook = smem;
-    double* s_sums = smem + levels;
-    unsigned int t = threadIdx.x;
-    double target = training_sequence[blockIdx.x];
-    double sum = 0;
-    unsigned int num_sums = levels / warpSize;
-    unsigned int min_index = t;
-    unsigned int shfl_min_index;
-    // load codebook into shared mem
-    for(unsigned int k = 0; k < num_sums; k++) {
-        s_codebook[num_sums*t + k] = codebook[num_sums*t + k];
-    }
-    for(unsigned int k = 0; k < num_sums; k++) {
-        for(unsigned int i = 0; i < levels; i++) {
-            sum += error_matrix[i + levels*(num_sums*t + k)] * (target - s_codebook[i]) * (target - s_codebook[i]);
-        }
-        s_sums[num_sums*t + k] = sum;
-        sum = 0;
-    }
-    // Now, find minimum array INDEX of all the sums.
-    for(unsigned int k = 1; k < num_sums; k++) {
-        if(s_sums[min_index] > s_sums[warpSize*k + t]) {
-            min_index = warpSize*k + t;
-        }
-    }
-    #pragma unroll
-    for(int offset = 16; offset > 0; offset /= 2) {
-        shfl_min_index = __shfl_down_sync(FULL_MASK, min_index, offset);
-        if(s_sums[min_index] > s_sums[shfl_min_index]) {
-            min_index = shfl_min_index;
-        }
-    }
-    if(t == 0) {
-        atomicAddDouble(cc_sums + min_index, target);
-        atomicAdd(cc_cardinal + min_index, 1);
+        cells[r*blockIdx.x + e] = min_index;
     }
 }

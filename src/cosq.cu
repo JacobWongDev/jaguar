@@ -13,7 +13,7 @@ Split::Split(COSQ* cosq, Device* device) {
   this->device = device;
 }
 
-void Split::split_lt32() {
+void Split::split_lt5() {
   double* temp = NULL;
   double* s_codebook = (double*) malloc(sizeof(double) * cosq->levels);
   cosq->q_points = (double*) malloc(sizeof(double) * cosq->levels);
@@ -22,13 +22,12 @@ void Split::split_lt32() {
   for(int i = 0; i < cosq->training_size; i++)
       sum += cosq->training_sequence[i];
   cosq->q_points[0] = sum / cosq->training_size;
-  nnc_block_size = {WARP_SIZE, 1, 1};
-  cc_cell_sums = (double*) malloc(sizeof(double) * cosq->levels);
-  cc_cardinality = (unsigned int*) malloc(sizeof(unsigned int) * cosq->levels);
   unsigned int rate = 0;
   unsigned int s_levels = 1;
+  nnc_lt5_block_size = {1024, 1, 1};
+  cc_gather_block_size = {64, 1, 1};
+  cc_gather_smem_size = (cc_gather_block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
   while(s_levels < cosq->levels) {
-    // printArr(cosq->q_points, s_levels);
     for(int i = 0; i < s_levels; i++) {
       s_codebook[2*i] = cosq->q_points[i] - delta;
       s_codebook[2*i+1] = cosq->q_points[i] + delta;
@@ -40,36 +39,38 @@ void Split::split_lt32() {
     rate++;
     checkCudaErrors(cudaMemset(device->cc_cardinality, 0, s_levels*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(device->cc_cell_sums, 0, s_levels*sizeof(double)));
-    nnc_grid_size = {cosq->training_size * s_levels / WARP_SIZE, 1, 1};
     checkCudaErrors(cudaMemcpy(device->q_points, cosq->q_points, sizeof(double) * s_levels, cudaMemcpyHostToDevice));
-    compute_error_matrix(cosq->error_matrix, s_levels, rate);
-    checkCudaErrors(cudaMemcpy(device->error_matrix, cosq->error_matrix, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
-    s_nnc_lt32<<<nnc_grid_size, nnc_block_size>>>(s_levels, device->training_sequence, device->q_points,
-        device->error_matrix, device->cc_cell_sums, device->cc_cardinality);
-    checkCudaErrors(cudaMemcpy(cc_cell_sums, device->cc_cell_sums, sizeof(double) * s_levels, cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(cc_cardinality, device->cc_cardinality, sizeof(unsigned int) * s_levels, cudaMemcpyDeviceToHost));
-    cc_lt32(s_levels, cosq->error_matrix, cc_cell_sums, cc_cardinality, cosq->q_points);
+    compute_ctm(cosq->ctm, s_levels, rate);
+    checkCudaErrors(cudaMemcpy(device->ctm, cosq->ctm, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
+    nnc_lt5_grid_size = {cosq->training_size / (nnc_lt5_block_size.x / s_levels), 1, 1};
+    nnc_lt5<<<nnc_lt5_grid_size, nnc_lt5_block_size>>>
+        (s_levels, device->training_sequence, device->q_points, device->ctm, device->q_cells);
+    cc_gather_grid_size = {s_levels, 1, 1};
+    cc_gather<<<cc_gather_grid_size, cc_gather_block_size, cc_gather_smem_size>>>
+        (device->training_sequence, cosq->training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
+    cc_le5_grid_size = {s_levels, 1, 1};
+    cc_le5_block_size = {s_levels, 1, 1};
+    cc_le5<<<cc_le5_grid_size, cc_le5_block_size>>>
+        (s_levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
+    checkCudaErrors(cudaMemcpy(cosq->q_points, device->q_points, s_levels * sizeof(double), cudaMemcpyDeviceToHost));
   }
   free(s_codebook);
-  free(cc_cell_sums);
-  free(cc_cardinality);
 }
 
-void Split::split_ge32() {
+void Split::split_ge5() {
   double* temp = NULL;
   double* s_codebook = (double*) malloc(sizeof(double) * cosq->levels);
   cosq->q_points = (double*) malloc(sizeof(double) * cosq->levels);
-  cc_cell_sums = (double*) malloc(sizeof(double) * cosq->levels);
-  cc_cardinality = (unsigned int*) malloc(sizeof(unsigned int) * cosq->levels);
   // Compute centroid of training sequence
   double sum = 0;
   for(int i = 0; i < cosq->training_size; i++)
-    sum += cosq->training_sequence[i];
+      sum += cosq->training_sequence[i];
   cosq->q_points[0] = sum / cosq->training_size;
-  nnc_block_size = {WARP_SIZE, 1, 1};
-  cc_block_size = {WARP_SIZE, 1, 1};
   unsigned int rate = 0;
   unsigned int s_levels = 1;
+  nnc_lt5_block_size = {1024, 1, 1};
+  cc_gather_block_size = {64, 1, 1};
+  cc_gather_smem_size = (cc_gather_block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
   while(s_levels < 32) {
     for(int i = 0; i < s_levels; i++) {
       s_codebook[2*i] = cosq->q_points[i] - delta;
@@ -82,17 +83,25 @@ void Split::split_ge32() {
     rate++;
     checkCudaErrors(cudaMemset(device->cc_cardinality, 0, s_levels*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(device->cc_cell_sums, 0, s_levels*sizeof(double)));
-    nnc_grid_size = {cosq->training_size * s_levels / WARP_SIZE, 1, 1};
     checkCudaErrors(cudaMemcpy(device->q_points, cosq->q_points, sizeof(double) * s_levels, cudaMemcpyHostToDevice));
-    compute_error_matrix(cosq->error_matrix, s_levels, rate);
-    checkCudaErrors(cudaMemcpy(device->error_matrix, cosq->error_matrix, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
-    s_nnc_lt32<<<nnc_grid_size, nnc_block_size>>>(s_levels, device->training_sequence, device->q_points,
-        device->error_matrix, device->cc_cell_sums, device->cc_cardinality);
-    checkCudaErrors(cudaMemcpy(cc_cell_sums, device->cc_cell_sums, sizeof(double) * s_levels, cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(cc_cardinality, device->cc_cardinality, sizeof(unsigned int) * s_levels, cudaMemcpyDeviceToHost));
-    cc_lt32(s_levels, cosq->error_matrix, cc_cell_sums, cc_cardinality, cosq->q_points);
+    compute_ctm(cosq->ctm, s_levels, rate);
+    checkCudaErrors(cudaMemcpy(device->ctm, cosq->ctm, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
+    nnc_lt5_grid_size = {cosq->training_size / (nnc_lt5_block_size.x / s_levels), 1, 1};
+    nnc_lt5<<<nnc_lt5_grid_size, nnc_lt5_block_size>>>
+        (s_levels, device->training_sequence, device->q_points, device->ctm, device->q_cells);
+    cc_gather_grid_size = {s_levels, 1, 1};
+    cc_gather<<<cc_gather_grid_size, cc_gather_block_size, cc_gather_smem_size>>>
+        (device->training_sequence, cosq->training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
+    cc_le5_grid_size = {s_levels, 1, 1};
+    cc_le5_block_size = {s_levels, 1, 1};
+    cc_le5<<<cc_le5_grid_size, cc_le5_block_size>>>
+        (s_levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
+    checkCudaErrors(cudaMemcpy(cosq->q_points, device->q_points, s_levels * sizeof(double), cudaMemcpyDeviceToHost));
   }
-  nnc_grid_size = {cosq->training_size, 1, 1};
+  nnc_ge5_block_size = {1024, 1, 1};
+  nnc_ge5_smem_size = (nnc_ge5_block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+  cc_ge5_block_size = {32, 1, 1};
+  cc_ge5_smem_size = 2 * (cc_ge5_block_size.x / WARP_SIZE) * sizeof(double);
   while(s_levels < cosq->levels) {
     for(int i = 0; i < s_levels; i++) {
       s_codebook[2*i] = cosq->q_points[i] - delta;
@@ -105,20 +114,21 @@ void Split::split_ge32() {
     rate++;
     checkCudaErrors(cudaMemset(device->cc_cardinality, 0, s_levels*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(device->cc_cell_sums, 0, s_levels*sizeof(double)));
-    nnc_smem_size = 2 * s_levels * sizeof(double);
     checkCudaErrors(cudaMemcpy(device->q_points, cosq->q_points, sizeof(double) * s_levels, cudaMemcpyHostToDevice));
-    compute_error_matrix(cosq->error_matrix, s_levels, rate);
-    checkCudaErrors(cudaMemcpy(device->error_matrix, cosq->error_matrix, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
-    s_nnc_ge32<<<nnc_grid_size, nnc_block_size, nnc_smem_size>>>(s_levels, device->training_sequence,
-        device->q_points, device->error_matrix, device->cc_cell_sums, device->cc_cardinality);
-    cc_grid_size = {s_levels, 1, 1};
-    cc_ge32<<<cc_grid_size, cc_block_size>>>(s_levels, device->q_points, device->error_matrix,
-        device->cc_cell_sums, device->cc_cardinality);
-    checkCudaErrors(cudaMemcpy(cosq->q_points, device->q_points, sizeof(double) * s_levels, cudaMemcpyDeviceToHost));
+    compute_ctm(cosq->ctm, s_levels, rate);
+    checkCudaErrors(cudaMemcpy(device->ctm, cosq->ctm, sizeof(double) * s_levels * s_levels, cudaMemcpyHostToDevice));
+    nnc_ge5_grid_size = {cosq->training_size / (nnc_ge5_block_size.x / cosq->levels), 1, 1};
+    nnc_ge5<<<nnc_ge5_grid_size, nnc_ge5_block_size, nnc_ge5_smem_size>>>
+        (s_levels, device->training_sequence, device->ctm, device->q_points, device->q_cells);
+    cc_gather_grid_size = {s_levels, 1, 1};
+    cc_gather<<<cc_gather_grid_size, cc_gather_block_size, cc_gather_smem_size>>>
+        (device->training_sequence, cosq->training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
+    cc_ge5_grid_size = {cosq->levels, 1, 1};
+    cc_ge5<<<cc_ge5_grid_size, cc_ge5_block_size, cc_ge5_smem_size>>>
+        (s_levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
+    checkCudaErrors(cudaMemcpy(cosq->q_points, device->q_points, s_levels * sizeof(double), cudaMemcpyDeviceToHost));
   }
   free(s_codebook);
-  free(cc_cell_sums);
-  free(cc_cardinality);
 }
 
 /**
@@ -127,7 +137,7 @@ void Split::split_ge32() {
 Device::Device(COSQ* cosq) {
   // Memory allocation
   checkCudaErrors(cudaMalloc((void **) &training_sequence, (cosq->training_size)*sizeof(double)));
-  checkCudaErrors(cudaMalloc((void **) &error_matrix, (cosq->levels)*(cosq->levels)*sizeof(double)));
+  checkCudaErrors(cudaMalloc((void **) &ctm, (cosq->levels)*(cosq->levels)*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &q_points, (cosq->levels)*sizeof(double)));
 
   checkCudaErrors(cudaMalloc((void **) &q_cells, (cosq->training_size)*sizeof(unsigned int)));
@@ -144,18 +154,27 @@ Device::Device(COSQ* cosq) {
   checkCudaErrors(cudaMemset(cc_cell_sums, 0, (cosq->levels)*sizeof(double)));
 
   // CUDA kernel launch params
-  nnc_ge32_grid_size = {cosq->training_size, 1, 1};
-  nnc_ge32_block_size = {WARP_SIZE, 1, 1};
-  nnc_lt32_grid_size = {cosq->training_size * cosq->levels / WARP_SIZE, 1, 1};
-  nnc_lt32_block_size = {WARP_SIZE, 1, 1};
-  nnc_smem_size = 2 * cosq->levels * sizeof(double);
+  nnc_ge5_block_size = {1024, 1, 1};
+  nnc_ge5_grid_size = {cosq->training_size / (nnc_ge5_block_size.x / cosq->levels), 1, 1};
+  nnc_ge5_smem_size = (nnc_ge5_block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
 
-  cc_grid_size = {cosq->levels, 1, 1};
-  cc_block_size = {WARP_SIZE, 1, 1};
+  nnc_lt5_block_size = {1024, 1, 1};
+  nnc_lt5_grid_size = {cosq->training_size / (nnc_lt5_block_size.x / cosq->levels), 1, 1};
 
-  dist_grid_size = {cosq->training_size / WARP_SIZE, 1, 1};
-  dist_block_size = {WARP_SIZE, 1, 1};
-  dist_smem_size = cosq->levels * sizeof(double);
+  cc_gather_grid_size = {cosq->levels, 1, 1};
+  cc_gather_block_size = {64, 1, 1};
+  cc_gather_smem_size = (cc_gather_block_size.x / WARP_SIZE) * (sizeof(double) + sizeof(unsigned int));
+
+  cc_ge5_grid_size = {cosq->levels, 1, 1};
+  cc_ge5_block_size = {32, 1, 1};
+  cc_ge5_smem_size = 2 * (cc_ge5_block_size.x / WARP_SIZE) * sizeof(double);
+
+  cc_le5_grid_size = {cosq->levels, 1, 1};
+  cc_le5_block_size = {cosq->levels, 1, 1};
+
+  dist_block_size = {1024, 1, 1};
+  dist_grid_size = {cosq->training_size / dist_block_size.x, 1, 1};
+  dist_smem_size = sizeof(double) * cosq->levels;
 }
 
 /**
@@ -163,7 +182,7 @@ Device::Device(COSQ* cosq) {
  */
 Device::~Device() {
   checkCudaErrors(cudaFree(training_sequence));
-  checkCudaErrors(cudaFree(error_matrix));
+  checkCudaErrors(cudaFree(ctm));
   checkCudaErrors(cudaFree(q_points));
   checkCudaErrors(cudaFree(q_cells));
   checkCudaErrors(cudaFree(cc_cardinality));
@@ -179,16 +198,16 @@ COSQ::COSQ(double* training_sequence, const unsigned int* training_size, const u
   this->levels = 1 << *bit_rate;
   this->training_sequence = training_sequence;
   this->training_size = *training_size;
-  this->error_matrix = (double*) malloc(levels*levels*sizeof(double));
-  if(COSQ::error_matrix == nullptr) {
-    spdlog::error("Memory Allocation error: Failed to allocate memory for error_matrix!");
+  this->ctm = (double*) malloc(levels*levels*sizeof(double));
+  if(COSQ::ctm == nullptr) {
+    spdlog::error("Memory Allocation error: Failed to allocate memory for ctm!");
     return;
   }
   device = new Device(this);
 }
 
 COSQ::~COSQ() {
-  free(error_matrix);
+  free(ctm);
   free(q_points);
   delete device;
 }
@@ -222,58 +241,48 @@ inline double polya_urn_error(int j, int i, int num_bits) {
 }
 
 /**
- * TODO: Use CUDA to accelerate this
+ * Computes channel transition matrix p(j|i) where
+ * i is the input symbol
+ * j is the output symbol
+ *
+ * To promote coalesced memory access on the GPU, the matrix
+ * is calculated in transposed form
+ *
+ * Typical: p(j|i) = mat[j + n*i]
+ *
+ * Transposed access: p(j|i) = mat[i + n*j]
+ *
  */
-void compute_error_matrix(double* error_matrix, unsigned int levels, unsigned int bit_rate) {
+void compute_ctm(double* ctm, unsigned int levels, unsigned int rate) {
   for(int i = 0; i < levels; i++) {
     for(int j = 0; j < levels; j++) {
-      error_matrix[j + i * levels] = polya_urn_error(j, i, bit_rate);
+      ctm[i + j * levels] = polya_urn_error(j, i, rate);
     }
-  }
-}
-
-void cc_lt32(unsigned int levels, double* error_matrix, double* cc_sums,
-    unsigned int* cc_cardinality, double* q_points) {
-  double numerator = 0;
-  double denominator = 0;
-  for (int j = 0; j < levels; j++) {
-    for (int i = 0; i < levels; i++) {
-        numerator += error_matrix[j + levels * i] * cc_sums[i];
-    }
-    for (int i = 0; i < levels; i++) {
-        denominator += error_matrix[j + levels * i] * cc_cardinality[i];
-    }
-    q_points[j] = numerator / denominator;
-    numerator = 0;
-    denominator = 0;
   }
 }
 
 /**
  *
  */
-void COSQ::cosq_lt32(double* target_q_points) {
+void COSQ::cosq_lt5(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
-  split.split_lt32();
+  split.split_lt5();
   checkCudaErrors(cudaMemcpy(device->q_points, q_points, levels * sizeof(double), cudaMemcpyHostToDevice));
-  compute_error_matrix(error_matrix, levels, bit_rate);
-  checkCudaErrors(cudaMemcpy(device->error_matrix, error_matrix, levels * levels * sizeof(double), cudaMemcpyHostToDevice));
-  // For sequential CC
-  double* cc_sums_lt32 = (double*) malloc(sizeof(double) * levels);
-  unsigned int* cc_cardinal_lt32 = (unsigned int*) malloc(sizeof(unsigned int) * levels);
+  compute_ctm(ctm, levels, bit_rate);
+  checkCudaErrors(cudaMemcpy(device->ctm, ctm, levels * levels * sizeof(double), cudaMemcpyHostToDevice));
   // COSQ algorithm
   while(true) {
     checkCudaErrors(cudaMemset(device->cc_cardinality, 0, levels*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(device->cc_cell_sums, 0, levels*sizeof(double)));
-    nnc_lt32<<<device->nnc_lt32_grid_size, device->nnc_lt32_block_size>>>(levels, device->training_sequence, device->q_points,
-        device->error_matrix, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
-    checkCudaErrors(cudaMemcpy(cc_sums_lt32, device->cc_cell_sums, sizeof(double) * levels, cudaMemcpyDeviceToHost));
-    checkCudaErrors(cudaMemcpy(cc_cardinal_lt32, device->cc_cardinality, sizeof(unsigned int) * levels, cudaMemcpyDeviceToHost));
-    cc_lt32(levels, error_matrix, cc_sums_lt32, cc_cardinal_lt32, q_points);
-    checkCudaErrors(cudaMemcpy(device->q_points, q_points, sizeof(double) * levels, cudaMemcpyHostToDevice));
-    distortion_gather_lt32<<<device->dist_grid_size, device->dist_block_size>>>(levels, device->training_sequence,
-        device->q_points, device->error_matrix, device->q_cells, device->reduction_sums);
+    nnc_lt5<<<device->nnc_lt5_grid_size, device->nnc_lt5_block_size>>>
+        (levels, device->training_sequence, device->q_points, device->ctm, device->q_cells);
+    cc_gather<<<device->cc_gather_grid_size, device->cc_gather_block_size, device->cc_gather_smem_size>>>
+        (device->training_sequence, training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
+    cc_le5<<<device->cc_le5_grid_size, device->cc_le5_block_size>>>
+        (levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
+    distortion_gather<<<device->dist_grid_size, device->dist_block_size, device->dist_smem_size>>>
+        (levels, device->training_sequence, device->q_points, device->ctm, device->q_cells, device->reduction_sums);
     dist_curr = distortion_reduce(training_size, device->reduction_sums);
     spdlog::info("Distortion is {:f}", dist_curr);
     if((dist_prev - dist_curr) / dist_prev < THRESHOLD) {
@@ -281,31 +290,31 @@ void COSQ::cosq_lt32(double* target_q_points) {
     }
     dist_prev = dist_curr;
   }
-  free(cc_sums_lt32);
-  free(cc_cardinal_lt32);
   memcpy(target_q_points, q_points, sizeof(double) * levels);
 }
 
 /**
  *
  */
-void COSQ::cosq_ge32(double* target_q_points) {
+void COSQ::cosq_ge5(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
-  split.split_ge32();
+  split.split_ge5();
   checkCudaErrors(cudaMemcpy(device->q_points, q_points, levels * sizeof(double), cudaMemcpyHostToDevice));
-  compute_error_matrix(error_matrix, levels, bit_rate);
-  checkCudaErrors(cudaMemcpy(device->error_matrix, error_matrix, levels * levels * sizeof(double), cudaMemcpyHostToDevice));
+  compute_ctm(ctm, levels, bit_rate);
+  checkCudaErrors(cudaMemcpy(device->ctm, ctm, levels * levels * sizeof(double), cudaMemcpyHostToDevice));
   // COSQ algorithm
   while(true) {
     checkCudaErrors(cudaMemset(device->cc_cardinality, 0, levels*sizeof(unsigned int)));
     checkCudaErrors(cudaMemset(device->cc_cell_sums, 0, levels*sizeof(double)));
-    nnc_ge32<<<device->nnc_ge32_grid_size, device->nnc_ge32_block_size, device->nnc_smem_size>>>(levels, device->training_sequence,
-        device->q_points, device->error_matrix, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
-    cc_ge32<<<device->cc_grid_size, device->cc_block_size>>>(levels, device->q_points, device->error_matrix,
-        device->cc_cell_sums, device->cc_cardinality);
-    distortion_gather_ge32<<<device->dist_grid_size, device->dist_block_size, device->dist_smem_size>>>(levels, device->training_sequence,
-        device->q_points, device->error_matrix, device->q_cells, device->reduction_sums);
+    nnc_ge5<<<device->nnc_ge5_grid_size, device->nnc_ge5_block_size, device->nnc_ge5_smem_size>>>
+        (levels, device->training_sequence, device->ctm, device->q_points, device->q_cells);
+    cc_gather<<<device->cc_gather_grid_size, device->cc_gather_block_size, device->cc_gather_smem_size>>>
+        (device->training_sequence, training_size, device->q_cells, device->cc_cell_sums, device->cc_cardinality);
+    cc_ge5<<<device->cc_ge5_grid_size, device->cc_ge5_block_size, device->cc_ge5_smem_size>>>
+        (levels, device->q_points, device->ctm, device->cc_cell_sums, device->cc_cardinality);
+    distortion_gather<<<device->dist_grid_size, device->dist_block_size, device->dist_smem_size>>>
+        (levels, device->training_sequence, device->q_points, device->ctm, device->q_cells, device->reduction_sums);
     dist_curr = distortion_reduce(training_size, device->reduction_sums);
     spdlog::info("Distortion is {:f}", dist_curr);
     if((dist_prev - dist_curr) / dist_prev < THRESHOLD) {
@@ -324,9 +333,9 @@ void COSQ::train(double* target_q_points) {
   if(training_sequence == nullptr || training_size == 0) {
     spdlog::error("Failed to train COSQ: Invalid training sequence or size!");
   }
-  if(levels >= 32) {
-    cosq_ge32(target_q_points);
+  if(bit_rate < 5) {
+    cosq_lt5(target_q_points);
   } else {
-    cosq_lt32(target_q_points);
+    cosq_ge5(target_q_points);
   }
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 training_length=1048576
-bit_rate=1
+bit_rate=6
 
 rm -rf build
 cmake -S src/ -B build/ -DCMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake
