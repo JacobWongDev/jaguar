@@ -38,9 +38,9 @@ bool isTrainingPow2(unsigned int x) {
 }
 
 bool verify_args(unsigned int* bit_rate, unsigned int* training_size) {
-    if(*training_size == 0 || *training_size >= MAX_TRAINING_SIZE || !isTrainingPow2(*training_size))
+    if(*training_size == 0 || *training_size > MAX_TRAINING_SIZE || !isTrainingPow2(*training_size))
         return false;
-    if(*bit_rate == 0 || *bit_rate >= MAX_BIT_RATE)
+    if(*bit_rate == 0 || *bit_rate > MAX_BIT_RATE)
         return false;
     return true;
 }
