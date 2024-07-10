@@ -228,20 +228,17 @@ void cosq(double* training_sequence) {
   double* codebook = split(training_sequence, levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
   compute_error_matrix(error_matrix, levels, rate);
   // Lloyd Iteration
-  int iter=0;
   while(true) {
     memset(cc_cell_sums, 0, sizeof(double) * levels);
     memset(cc_cell_cardinality, 0, sizeof(unsigned int) * levels);
     nnc(cells, training_sequence, codebook, levels, error_matrix, cc_cell_sums, cc_cell_cardinality);
     cc(levels, error_matrix, cc_cell_sums, cc_cell_cardinality, codebook);
     dist_curr = distortion(levels, training_sequence, error_matrix, codebook, cells);
-    iter++;
     if((dist_prev - dist_curr) / dist_prev < THRESHOLD) {
       break;
     }
     dist_prev = dist_curr;
   }
-  std::cout << "Iters " << iter << std::endl;
   free(codebook);
   free(error_matrix);
 }
