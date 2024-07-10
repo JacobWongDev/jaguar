@@ -165,21 +165,6 @@ double distortion(unsigned int levels, double* training_sequence, double* error_
 }
 
 /**
- *
- * TODO: DELETE AFTER DEBUGGING!!
-*/
-void printArrays(double* current, double* split, int levels) {
-  std::cout << "Current: [";
-  for(int i = 0; i < levels; i++)
-    std::cout << current[i] << ", ";
-  std:: cout << std::endl;
-  std::cout << "Split: [";
-  for(int i = 0; i < 2*levels; i++)
-    std::cout << split[i] << ", ";
-  std:: cout << std::endl;
-}
-
-/**
  * Splitting technique:
  * - A study of vector quantization for noisy channels, pg. 806 B.
  * - An Algorithm for Vector Quantizer Design pg. 89

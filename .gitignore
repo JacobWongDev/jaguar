@@ -47,8 +47,3 @@ temp
 
 # Dependencies
 vcpkg
-
-# TODO: Remove from .gitignore in future once docs are finished.
-docs
-.venv
-vcpkg

@@ -1,0 +1,175 @@
+# Jaguar
+
+Jaguar is a CUDA-Accelerated Channel Optimized Scalar Quantizer (COSQ). By passing it a file consisting of a series of doubles, Jaguar will generate near-optimal quantization points for the given sequence.
+
+The command line arguments for jaguar are in the following format::
+
+> ./jaguar -b "bit_rate" -t "training_length" -f "sequence_file"
+
+Where
+* **bit_rate** is the bit rate of the quantizer which jaguar will produce.
+  The bit rate must be between 1 and 10 inclusive
+* **training_length** is the length of the training sequence in the file.
+  The length must be 2^20 to 2^25 inclusive, and must be a power of 2.
+* **sequence_file** is the name of the file in the same directory of the exe,
+  containing "training_length" number of doubles.
+
+## Motivation
+
+This project was inspired by MTHE 493 at Queen's University. During my final year in the Applied Mathematics and Engineering program, my team and I were tasked with creating an image transmission system which could maintain reasonable image fidelity. The main challenge for this project was generating COSQs for image transmission.
+
+Using Python I created a naive sequential implementation which generated COSQs. It worked fast enough for low bit rates and small training sizes, however became difficult to work with when using high bit rates and training sizes larger than 100,000.
+
+* Low bit rates considered to be [1 .. 4] and high bit rates are [5 .. 10]
+* Large training sizes are > 100,000
+
+Even after writing the same implementation in C++, performance was still lacking at high bit rates
+and larger training sizes. It was particularly frustrating since the team was under tight deadlines
+and training an 8 bit quantizer with ~1,000,000 training elements took almost 2 hours.
+
+After the course was over, I still wanted to investigate ways to speed up heavy computational workloads, which ultimately led to this project.
+
+## Mathematical Model
+
+Below is a very brief introduction into scalar quantization and channel modelling.
+
+### Scalar Quantization
+
+A scalar quantizer is simply a map $Q: \mathbb{R} \rightarrow C$. $C$ is referred to as the "codebook", or "quantization points" of the quantizer $Q$. The goal of scalar quantization is to represent a series of values by a discrete set of values.
+
+The quantizer $Q$ also has regions $R_i$ called quantizer cells, defined as:
+
+$$
+    R_i=\{x:Q(x) = y_i\}, \qquad i = 1,…,N
+$$
+
+It is clear that every element of the real numbers cannot be represented by a value of C without losing accuracy, so why would one do this? In the case of image transmission, this idea is very powerful because images can be very large files. To accomodate the transmission of such large files, which would have high latency, one can instead reduce the precision of the image by quantizing the image data, and send the quantized data rather than the raw image. Although the image sent will not be the same as the received image, the overall fidelity of the image will not have changed much, provided that the channel error rate is not high.
+
+#### Distortion
+
+The error between the original value and its associated quantization point is called the distortion. By representing $x\in\mathbb{R}$ by $Q(x)=y_i \in C$, there is some distortion. One popular distortion measure, which is used by Jaguar, is the squared error:
+
+$$
+    d(x,y)=(x-y)^2
+$$
+
+#### Rate
+The rate of the scalar quantizer $Q$ is the number of bits used to encode the output of $Q$. Since the size of the output of $Q$ is simply $|C|=N$ it is easy to see that the rate $R(Q)$ is defined as
+
+$$
+    R(Q) = \log_{2}N
+$$
+
+**Note:** In the source code, I typically use **levels** to denote the number of elements in the codebook, and **q_points** to denote the codebook.
+
+#### Goal
+
+The goal of optimizing scalar quantizers is to minimize the distortion for a given rate or a fixed $N=|C|$. In other words, given $Q_N$, the set of all scalar quantizer with $|C|=N$, an optimal scalar quantizer $Q^*$ is one such that,
+
+$$
+    D(Q^*)=\min_{Q\in Q_N}D(Q)
+$$
+
+### Channel
+
+In addition to the error incurred from quantization, there is also error from sending data over a channel. The "channel", in the physical sense, is a medium in which electromagnetic signals are sent through to transmit a message. From the mathematical perspective, we only care about the likelyhood in which our message is transmitted without any distortion.
+
+To "model" the probability that the message was received correctly or incorrectly, Jaguar uses the **Pólya Channel**. The Pólya Channel is an example of a channel with memory. Modeling a Pólya channel generally uses 2 main parameters, $\epsilon$ and $\delta$ as well as the size of the memory $M$. For simplicity, only consider channels with $M=1$. Since this is a channel with memory, it is helpful to look at the transition probabilities between an input block of $n$ bits $\bold{X}=(X_1, \dots, X_n)$ and output block $\bold{Y}=(Y_1, \dots, Y_n)$ rather than between bits. First define
+
+$$
+    g\left(e_i\right) := \begin{cases}
+        \frac{(1-\epsilon)+(1-e_{i-1}\delta)}{1+\delta} & e_i = 0 \\
+        \frac{\epsilon+e_{i-1}\delta}{1+\delta} & e_i = 1 \\
+    \end{cases}, \qquad i = 2, \dots, n
+$$
+
+and
+
+$$
+    P(Z_i = e_i) = \begin{cases}
+    1-\epsilon & e_i=0\\
+    \epsilon & e_i=1
+\end{cases}
+$$
+
+then use it to model
+
+$$
+    P(\bold{Y}=\bold{y}|\bold{X}=\bold{x}) = P(Z_1=x_1\oplus y_1)\prod^n_{i=2}g(x_i\oplus y_i)
+$$
+
+This channel is said to model the 'bursty' nature of noise in wireless channels, as when an error occurs it becomes more likely to occur in the next bit as well.
+
+### Quantizer design
+
+Putting all the above theory together, one can create near-optimal quantizers for the Pólya Channel by using an approach similar to the Lloyd-Max algorithm.
+
+#### Splitting Technique
+
+Before diving into the COSQ algorithm, one first needs an initial codebook. To generate the initial codebook, the "Splitting Technique" is used. This is described in "A study of vector quantization for noisy channels", pg. 806 B. Jaguar uses this algorithm to initialize the codebook.
+
+#### COSQ Algorithm
+
+
+
+## Repository Structure
+
+* **docs** contains documentation for the project
+* **test_kernels** contains smaller projects used to profile & test kernels used by Jaguar individually.
+
+## Development Environment
+
+This project was developed on Windows 11 WSL 2.
+
+The hardware
+
+## Results
+
+The result of this project is very positive. Jaguar provides significant speedup compared to the [sequential implementation written in C++](../sequential/). Please see the graphs below:
+
+<img src="images/exec_time.png" alt="exec_time" width="800"/>
+<img src="images/speedup.png" alt="speedup" width="800"/>
+
+**Important!** These graphs were collected under the following parameters.
+* Training size 1,048,576 (2^20).
+* Splitting technique delta 0.001
+* COSQ Threshold 0.01
+* Pólya Channel parameters $\epsilon = 0, \delta = 0$
+
+Each data point, **EXCEPT** for the ones in green, were collected by averaging the execution time of 10 executions after a warm-up run. The data points in green were simply collected by running the program once (the sequential implementation took too long).
+
+Although Jaguar performs very well in comparison, it can still be improved. Please see [Improvements & Future work](future_work.md).
+
+**Remark 1**
+
+Because the project was done on WSL, I don't think these performance measurements are 100% accurate. There were certainly some background processes on Windows stealing the CPU during these measurements, and the same is true for the GPU since it was rendering my screen.
+
+**Remark 2**
+Jaguar can also perform better than these measurements. Typically one writing high performance code would write the kernels and then tune the block & grid sizes to maximize performance, however the current Jaguar implementation does not have any tuning applied. I used a very basic setup of block & grid sizes for all kernels, and I predict that if one does more profiling work on the kernels, more performance can be obtained.
+
+Furthermore, there are multiple kernels for the Nearest Neighbour Condition (NNC) that can be selectively chosen at runtime to maximize performance (rather than just using one for every scenario, which is what Jaguar currently does).
+
+## Acknowledgements
+
+I would like to all the professors and students who have helped me with this project.
+
+* Dr. Fady Alajaji for his mathematical guidance.
+* Dr. Tamas Linder for supervising my capstone project.
+* Dr. Ahmad Afsahi for his guidance on CUDA related resources.
+* AmirHossein Sojoodi for providing project improvements.
+
+## References
+
+There are many notable resources that the project has used. Below is a full
+list of all resources.
+
+1. Wen-mei W. Hwu, David B. Kirk, Izzat El Hajj - Programming Massively Parallel Processors. A Hands-on Approach-Elsevier (2023)
+2. Nariman Farvardin - A Study of Vector Quantization
+for Noisy Channels
+3. Kiraseya Preusser - Channel Optimized Scalar Quantization over
+Orthogonal Multiple Access Channels with Memory
+4. Optimizing Parallel Reduction in CUDA - Mark Harris
+5. An Algorithm for Vector Quantizer Design - Yoseph Linde, Andres Buzo, Robert M. Gray
+6. Channel Optimized Quantization of Images over Binary Channels with Memory - Julian Cheng
+7. Using Simulated Annealing to Design Good Codes - Abbas A. El Gamal, Lane A. Hemachandra, Itzhak Shperling, Victor K. Wei
+
