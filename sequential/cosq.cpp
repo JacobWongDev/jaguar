@@ -89,7 +89,6 @@ void s_nnc(double* training_sequence, double* codebook, int levels, double* erro
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
-      // Kahan summation
       for(int j = 0; j < levels; j++) {
         sum += error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
@@ -118,7 +117,6 @@ void nnc(unsigned int* cells, double* training_sequence, double* codebook, int l
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
-      // Kahan summation
       for(int j = 0; j < levels; j++) {
         sum += error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }

@@ -271,7 +271,6 @@ void s_nnc_cpu(unsigned int training_size, double* training_sequence, double* co
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
-      // Kahan summation
       for(int j = 0; j < levels; j++) {
         sum += ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
@@ -298,7 +297,6 @@ void nnc_cpu(unsigned int training_size, unsigned int* cells, double* training_s
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
-      // Kahan summation
       for(int j = 0; j < levels; j++) {
         sum += ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
