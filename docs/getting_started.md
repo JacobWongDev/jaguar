@@ -1,38 +1,49 @@
-Installations on WSL
-$ sudo apt-get update
-$ sudo apt install g++
-$ sudo apt install make
-$ sudo apt-get install libssl-dev
+# Jaguar Setup
 
-Download CMAKE tar.gz from https://cmake.org/download/
-- Install CMAKE:
-$ tar -xvzf <cmake tarball>
-$ ./bootstrap
-$ make -j$(nproc)
-$ sudo make install
+Jaguar is meant to be run on linux. Below is a list of all
+the required software, and some imporant notes for using Jaguar on WSL.
 
-Download CUDA Toolkit
-- https://developer.nvidia.com/cuda-downloads
+## Required Software
 
+Below are the required softwares for building/developing Jaguar.
 
-Enable GPU usage on WSL2
-(Full guide here, but by now some steps are already done)
-https://ubuntu.com/tutorials/enabling-gpu-acceleration-on-ubuntu-on-wsl2-with-the-nvidia-cuda-platform#1-overview
+### CMake and make
 
-1. Go here to download correct driver https://www.nvidia.com/Download/index.aspx?lang=en-us
+To install the latest CMake on WSL, do:
 
-add the following to ~/.bashrc
-$ export PATH=$PATH:/usr/local/cuda-12.5/bin
+1. Download CMAKE tarball from [here](https://cmake.org/download/)
+2. ```tar -xvzf "cmake tarball name"```
+3. ```./bootstrap```
+4. ```make -j$(nproc)```
+5. ```sudo make install```
 
-To enable the compute-sanitizer for memcheck and other utils, execute::
+To get make, you can use APT.
 
-REG ADD HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm /f /v EnableDebugInterface /t REG_DWORD /d 1
-REG ADD “HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger” /f /v EnableInterface /t REG_DWORD /d 1
+### CUDA Toolkit
 
-Source: https://forums.developer.nvidia.com/t/compute-sanitizer-help-errors-on-wsl2-ubuntu-22-04/295507
+The CUDA Toolkit comes with nvcc and a collection of useful libraries. It can be downloaded [here](https://developer.nvidia.com/cuda-downloads).
 
-For VSCode users 
+Follow the steps at the link.
 
+As a final step, add the following to ~/.bashrc
+
+```bash
+export PATH=$PATH:/usr/local/cuda-<!version here!>/bin
+```
+
+### NVIDIA GPUs and WSL
+
+To allow WSL to use the GPU, one must follow [this guide](https://canonical-ubuntu-wsl.readthedocs-hosted.com/en/latest/tutorials/gpu-cuda/).
+
+## VSCode extensions
+
+To develop CUDA Kernels, the "Nsight Visual Studio Code Edition" works well with the C/C++ extension pack.
+To ensure that include statements are resolved properly by these plugins, make sure to add a line to settings.json
+which will ensure both cuda toolkit and vcpkg library headers are not reported as errors.
+
+Here is what my settings.json looks like:
+
+```json
 {
     "configurations": [
         {
@@ -52,3 +63,18 @@ For VSCode users
     ],
     "version": 4
 }
+```
+
+## CUDA Compute Sanitizer
+
+To use NVIDIA's compute sanitizer tool (very useful!) on WSL, you may have to follow the steps below.
+
+The tool comes with the CUDA toolkit, however for some versions of the toolkit there is a known problem
+when used with WSL which you can read about [here](https://forums.developer.nvidia.com/t/compute-sanitizer-help-errors-on-wsl2-ubuntu-22-04/295507)
+
+The solution is to run the following in Administrator powershell:
+
+```ps
+REG ADD HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm /f /v EnableDebugInterface /t REG_DWORD /d 1
+REG ADD “HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger” /f /v EnableInterface /t REG_DWORD /d 1
+```

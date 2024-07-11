@@ -37,11 +37,6 @@
 # Build files
 build/
 
-# Images
-*.png
-*.jpeg
-*.pbm
-
 # Temporary files
 temp
 
