@@ -1,6 +1,6 @@
 # Jaguar
 
-Jaguar is a CUDA-accelerated Channel Optimized Scalar Quantizer (COSQ). By passing it a file consisting of a series of doubles, Jaguar will generate near-optimal quantization points for the given sequence.
+Jaguar is a CUDA-accelerated Channel Optimized Scalar Quantizer (COSQ) generator. By passing it a file consisting of a series of doubles, Jaguar will generate near-optimal quantization points for the given sequence.
 
 The command line arguments for jaguar are in the following format::
 
@@ -52,7 +52,7 @@ and $N$ is the number of quantization points.
 
 It is clear that every element of the real numbers cannot be represented by a value of C without losing accuracy, so why would one do this? In the case of image transmission, this idea is very powerful because images can be very large files. To accomodate the transmission of such large files, which would have high latency, one can instead reduce the precision of the image by quantizing the image data, and send the quantized data rather than the raw image. Although the image sent will not be the same as the received image, the overall fidelity of the image will not have changed much, provided that the channel error rate is not high.
 
-#### Distortion
+#### Distortion Measure
 
 The error between the original value and its associated quantization point is called the distortion. By representing $x\in\mathbb{R}$ by $Q(x)=y_i \in C$, there is some error between the actual value and its representation by quantization. One popular distortion measure, which is used by Jaguar, is the squared error:
 
@@ -213,19 +213,11 @@ The result of this project is very positive. Jaguar provides significant speedup
 * COSQ Threshold 0.01
 * Pólya Channel parameters $\epsilon = 0, \delta = 0$
 
-Each data point, **EXCEPT** for the ones in green, were collected by averaging the execution time of 10 executions after a warm-up run. The data points in green were simply collected by running the program once (the sequential implementation took too long).
-
 Although Jaguar performs very well in comparison, it can still be improved. Please see [Improvements & Future work](future_work.md).
 
-### Remark 1
+### Remark
 
-Because the project was done on WSL, I don't think these performance measurements are 100% accurate. There were certainly some background processes on Windows stealing the CPU during these measurements, and the same is true for the GPU since it was rendering my screen.
-
-### Remark 2
-
-Jaguar can also perform better than these measurements. Typically one writing high performance code would write the kernels and then tune the block & grid sizes to maximize performance, however the current Jaguar implementation does not have any tuning applied. I used the most intuitive block & grid sizes for all kernels, but I predict that if one does more profiling work on the kernels, more performance can be obtained.
-
-Furthermore, there are multiple kernels for the Nearest Neighbour Condition (NNC) that can be selectively chosen at runtime to maximize performance (rather than just using one for every scenario, which is what Jaguar currently does).
+Because the project was done on WSL, these performance measurements are **NOT** 100% accurate. There were certainly some background processes on Windows stealing the CPU during these measurements, and the same is true for the GPU since it was rendering both monitors I have connected.
 
 ## Acknowledgements
 

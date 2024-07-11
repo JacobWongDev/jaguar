@@ -1,7 +1,12 @@
 # Jaguar Setup
 
-Jaguar is meant to be run on linux. Below is a list of all
-the required software, and some imporant notes for using Jaguar on WSL.
+Jaguar is meant to be run on linux. Below is a list of all the required software, and some imporant notes for using Jaguar on WSL.
+
+To start, one should run
+
+```./setup.sh```
+
+since it will install vcpkg and download spdlog, both of which are Jaguar dependencies.
 
 ## Required Software
 
@@ -37,9 +42,7 @@ To allow WSL to use the GPU, one must follow [this guide](https://canonical-ubun
 
 ## VSCode extensions
 
-To develop CUDA Kernels, the "Nsight Visual Studio Code Edition" works well with the C/C++ extension pack.
-To ensure that include statements are resolved properly by these plugins, make sure to add a line to settings.json
-which will ensure both cuda toolkit and vcpkg library headers are not reported as errors.
+To develop CUDA Kernels, the "Nsight Visual Studio Code Edition" works well with the C/C++ extension pack. To ensure that include statements are resolved properly by these plugins, make sure to add a line to settings.json which will ensure both cuda toolkit and vcpkg library headers are not reported as errors.
 
 Here is what my settings.json looks like:
 
@@ -69,8 +72,7 @@ Here is what my settings.json looks like:
 
 To use NVIDIA's compute sanitizer tool (very useful!) on WSL, you may have to follow the steps below.
 
-The tool comes with the CUDA toolkit, however for some versions of the toolkit there is a known problem
-when used with WSL which you can read about [here](https://forums.developer.nvidia.com/t/compute-sanitizer-help-errors-on-wsl2-ubuntu-22-04/295507)
+The tool comes with the CUDA toolkit, however for some versions of the toolkit there is a known problem when used with WSL which you can read about [here](https://forums.developer.nvidia.com/t/compute-sanitizer-help-errors-on-wsl2-ubuntu-22-04/295507)
 
 The solution is to run the following in Administrator powershell:
 

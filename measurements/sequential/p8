@@ -1,2 +1,3 @@
 Training 8-bit normal quantizer for polya channel delta 0.000000, epsilon 0.000000
-The exec time is 7080572ms.
+Warm-up time is 2565240ms.
+The average is 2.58546e+06ms.

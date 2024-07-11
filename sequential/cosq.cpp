@@ -241,20 +241,20 @@ int main(int argc, char** argv) {
   printf("Training %d-bit normal quantizer for polya channel delta %f, epsilon %f\n", rate, POLYA_DELTA, POLYA_EPSILON);
   double* normal = generate_normal_sequence();
   std::chrono::_V2::system_clock::time_point start, end;
-  std::chrono::seconds exec_time;
+  std::chrono::milliseconds exec_time;
   int sum = 0;
   for(int i = 0; i < 11; i++) {
     start = std::chrono::high_resolution_clock::now();
     cosq(normal);
     end = std::chrono::high_resolution_clock::now();
-    exec_time = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    exec_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if(i == 0) {
-      std::cout << "Warm-up time is " << exec_time.count() << "s." << std::endl;
+      std::cout << "Warm-up time is " << exec_time.count() << "ms." << std::endl;
     } else {
       sum += exec_time.count();
     }
   }
-  std::cout << "The average is " << (float) sum / 10 << "s." << std::endl;
+  std::cout << "The average is " << (float) sum / 10 << "ms." << std::endl;
   free(normal);
   return 0;
 }

@@ -1,0 +1,59 @@
+       ___         ___           ___           ___           ___           ___     
+      /\  \       /\  \         /\  \         /\__\         /\  \         /\  \    
+      \:\  \     /::\  \       /::\  \       /:/  /        /::\  \       /::\  \   
+  ___ /::\__\   /:/\:\  \     /:/\:\  \     /:/  /        /:/\:\  \     /:/\:\  \  
+ /\  /:/\/__/  /::\~\:\  \   /:/  \:\  \   /:/  /  ___   /::\~\:\  \   /::\~\:\  \ 
+ \:\/:/  /    /:/\:\ \:\__\ /:/__/_\:\__\ /:/__/  /\__\ /:/\:\ \:\__\ /:/\:\ \:\__\
+  \::/  /     \/__\:\/:/  / \:\  /\ \/__/ \:\  \ /:/  / \/__\:\/:/  / \/_|::\/:/  /
+   \/__/           \::/  /   \:\ \:\__\    \:\  /:/  /       \::/  /     |:|::/  / 
+                   /:/  /     \:\/:/  /     \:\/:/  /        /:/  /      |:|\/__/  
+                  /:/  /       \::/  /       \::/  /        /:/  /       |:|  |    
+                  \/__/         \/__/         \/__/         \/__/         \|__|    
+::Channel Optimized Scalar Quantizer (COSQ)::                       (version 0.1.0)
+::Developer - Jacob Wong::
+===================================================================================
+
+[2024-07-11 01:10:10.829] [info] Found GPU Device 0!
+[2024-07-11 01:10:10.830] [info] Compute Architecture Turing
+[2024-07-11 01:10:10.830] [info] Compute Capability 7.5
+[2024-07-11 01:10:10.830] [info] Device Properties:
+[2024-07-11 01:10:10.830] [info] Device name: NVIDIA GeForce RTX 2070
+[2024-07-11 01:10:10.830] [info] Streaming Multiprocessors (SMs): 36
+[2024-07-11 01:10:10.830] [info] Warp size: 32
+[2024-07-11 01:10:10.830] [info] Maximum threads per block: 1024
+[2024-07-11 01:10:10.830] [info] Total Global memory: 8.589476GB
+[2024-07-11 01:10:10.830] [info] Shared Memory per block: 49.152000KB
+[2024-07-11 01:10:10.830] [info] Registers per block: 65536
+[2024-07-11 01:10:10.830] [info] Training COSQ with bit rate 8 and training size 1048576
+[2024-07-11 01:13:59.279] [info] Split: Performing correctness test
+[2024-07-11 01:13:59.279] [info] The codebooks match! Split Correctness test passed!
+
+[2024-07-11 01:16:49.357] [info] NNC: Executing test on cells...
+[2024-07-11 01:16:49.360] [info] NNC CELLS TEST PASSED
+[2024-07-11 01:16:49.368] [info] Executing test cell cardinality and min sums...
+[2024-07-11 01:16:49.368] [info] NNC CC TEST PASSED
+[2024-07-11 01:16:49.369] [info] NNC: Performing correctness test CC
+[2024-07-11 01:16:49.369] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-11 01:16:50.200] [info] Distortion test passed! CPU 0.000141 vs. GPU 0.000141
+[2024-07-11 01:16:50.200] [info] Distortion is 0.000141
+[2024-07-11 01:19:39.945] [info] NNC: Executing test on cells...
+[2024-07-11 01:19:39.948] [info] NNC CELLS TEST PASSED
+[2024-07-11 01:19:39.955] [info] Executing test cell cardinality and min sums...
+[2024-07-11 01:19:39.955] [info] NNC CC TEST PASSED
+[2024-07-11 01:19:39.956] [info] NNC: Performing correctness test CC
+[2024-07-11 01:19:39.956] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-11 01:19:40.775] [info] Distortion test passed! CPU 0.000133 vs. GPU 0.000133
+[2024-07-11 01:19:40.775] [info] Distortion is 0.000133
+[2024-07-11 01:22:30.292] [info] NNC: Executing test on cells...
+[2024-07-11 01:22:30.295] [info] NNC CELLS TEST PASSED
+[2024-07-11 01:22:30.302] [info] Executing test cell cardinality and min sums...
+[2024-07-11 01:22:30.302] [info] NNC CC TEST PASSED
+[2024-07-11 01:22:30.302] [info] NNC: Performing correctness test CC
+[2024-07-11 01:22:30.302] [info] The codebooks match! CC Correctness test passed!
+
+[2024-07-11 01:22:31.119] [info] Distortion test passed! CPU 0.000129 vs. GPU 0.000129
+[2024-07-11 01:22:31.120] [info] Distortion is 0.000129
+
+-- Terminated Execution Before Completion of COSQ iterations --
