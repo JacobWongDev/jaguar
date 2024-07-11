@@ -6,11 +6,11 @@
 
 #define MAX_BIT_RATE 10
 #define MAX_TRAINING_SIZE (1 << 25)
+
 /**
  * @brief Prints banner and performs various system checks.
  *
- * @param argc Number of command-line arguments
- * @param argv Array of command-line arguments
+ * @return false if cuda initialization fails.
  */
 bool init() {
     // Fetch banner and print it
@@ -33,10 +33,23 @@ bool init() {
     return cuda_init();
 }
 
+/**
+ * @brief
+ *
+ * @param x
+ * @return Returns true if x is power of 2.
+ */
 bool isTrainingPow2(unsigned int x) {
   return ((x & (x - 1)) == 0);
 }
 
+/**
+ * @brief Verify whether CLI args conform to Jaguar's constraints
+ *
+ * @param bit_rate
+ * @param training_size
+ * @return false if args are invalid.
+ */
 bool verify_args(unsigned int* bit_rate, unsigned int* training_size) {
     if(*training_size == 0 || *training_size > MAX_TRAINING_SIZE || !isTrainingPow2(*training_size))
         return false;
@@ -45,6 +58,13 @@ bool verify_args(unsigned int* bit_rate, unsigned int* training_size) {
     return true;
 }
 
+/**
+ * @brief Reads training sequence (list of doubles) of length training_size
+ * from file.
+ *
+ * @param file_name
+ * @param training_size
+ */
 double* read_training_seq(char* file_name, unsigned int* training_size) {
     FILE* training_seq_file = fopen(file_name, "r");
     double* training_sequence = (double*) malloc(*training_size * sizeof(double));
@@ -64,6 +84,12 @@ double* read_training_seq(char* file_name, unsigned int* training_size) {
     return training_sequence;
 }
 
+/**
+ * @brief Function to write quantizer (list of doubles) to file "quantizer"
+ *
+ * @param quantizer
+ * @param bit_rate
+ */
 void write_quantizer(double* quantizer, unsigned int* bit_rate) {
     FILE* quantizer_file = fopen("quantizer", "w");
     size_t count = fwrite(quantizer, sizeof(double), (1 << *bit_rate), quantizer_file);
@@ -74,11 +100,11 @@ void write_quantizer(double* quantizer, unsigned int* bit_rate) {
 }
 
 /**
- * @brief main function
+ * @brief Parses CLI args, executes Jaguar and saves quantizer to file.
  *
- * @param argc Number of command-line arguments
- * @param argv Array of command-line arguments
- * @return Status code
+ * @param argc
+ * @param argv
+ * @return
  */
 int main(int argc, char** argv) {
     int opt;

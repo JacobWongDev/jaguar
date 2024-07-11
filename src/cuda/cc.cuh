@@ -1,9 +1,15 @@
 #include <cuda_device_runtime_api.h>
 
 /**
- * 1 block per q_points element
- * blockDim.x >= 32 permitted.
+ * @brief 1st half of Centroid Condition.
+ * 2nd half is cc_* kernel.
+ *
+ * This kernel computes the cardinality of each quantization cell, and the sum of each cell.
  * The more threads, the less 'scanning' work each thread has to do.
+ * Each thread 'scans' part of the cells array to look for its assigned codebook index.
+ *
+ * Kernel Requirements:
+ * blockDim.x >= 32, and blockDim.x is a power of 2.
  */
 __global__ void cc_gather(double* training_sequence, unsigned int training_size,
         unsigned int* cells, double* cc_sums, unsigned int* cc_cardinality) {
@@ -49,10 +55,20 @@ __global__ void cc_gather(double* training_sequence, unsigned int training_size,
     }
 }
 
-/*
-    Each block computes 1 q_points element
-    and levels >= blockDim.x.
-*/
+/**
+ * @brief 2nd half of Centroid Condition, bit rate greater or equal to 5.
+ *
+ * This kernel computes the new quantization points (q_points).
+ * Each block computes 1 quantization point using the cardinality and
+ * cell sums from cc_gather.
+ *
+ * Since the maximum bit rate is 10, the largest possible reduction
+ * size will be 2^10, and hence 2 iterations of warp reductions can
+ * reduce the sum (assuming each warp reduces 32 elements).
+ *
+ * Kernel Requirements:
+ * levels >= blockDim.x, and blockDim.x is a power of 2.
+ */
 __global__ void cc_ge5(unsigned int levels, double* q_points, double* ctm,
         double* cc_cell_sums, unsigned int* cc_cardinality) {
     extern __shared__ char smem[];
@@ -94,10 +110,20 @@ __global__ void cc_ge5(unsigned int levels, double* q_points, double* ctm,
     }
 }
 
-/*
-    Each block computes 1 q_points element
-    and levels >= blockDim.x.
-*/
+/**
+ * @brief 2nd half of Centroid Condition, bit rate less than 5.
+ *
+ * This kernel computes the new quantization points (q_points).
+ * Each block computes 1 quantization point using the cardinality and
+ * cell sums from cc_gather.
+ *
+ * Since the bit rate < 5, the largest possible reduction
+ * size will be 32, and hence 1 warp reduction can
+ * reduce the sum (assuming each warp reduces 32 elements).
+ *
+ * Kernel Requirements:
+ * levels >= blockDim.x, and blockDim.x is a power of 2.
+ */
 __global__ void cc_le5(unsigned int levels, double* q_points, double* ctm,
         double* cc_cell_sums, unsigned int* cc_cardinality) {
     unsigned int t = threadIdx.x;

@@ -55,7 +55,7 @@ with better FP64 performance can yield better results.
 
 ### Shared memory and Constant memory
 
-In a few kernels, including the distortion_gather and nnc*, I tried storing the codebook (q_points)
+In the nnc* kernels, I tried storing the codebook (q_points)
 in shared memory but didn't notice any major preformance benefits. For now I have omitted the use
 of shared memory, but I think it can provide improvements if more profiling is done to determine
 why there isnt a difference. I suspect the FP64 operations are a bottleneck on performance.

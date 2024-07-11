@@ -12,7 +12,10 @@ int rate;
 #define THRESHOLD 0.01
 
 /**
- * Return an array of size training_size containing values distributed according to N(0,1)
+ * @brief Return an array of size training_size containing values
+ * distributed according to N(0,1)
+ *
+ * @return sequence of values that must be free()'d!
 */
 double* generate_normal_sequence() {
     double* normal_sequence = (double*) malloc(training_size * sizeof(double));
@@ -26,17 +29,26 @@ double* generate_normal_sequence() {
 }
 
 /**
- * @brief Error measure used by the cosq.
+ * @brief Squared error measure.
  *
  * @param a
  * @param b
- * @return double
+ * @return error
  */
 inline double error(double a, double b) {
   return (a - b) * (a - b);
 }
 
-inline double polya_urn_error(int j, int i, int num_bits) {
+/**
+ * @brief Polya Urn Channel Model. Returns probability
+ * of sending i and receiving j.
+ *
+ * @param j Received codebook index
+ * @param i Sent codebook index
+ * @param bit_rate bit rate for the quantizer
+ * @return probability
+ */
+inline double polya_urn_error(int j, int i, int bit_rate) {
   double temp;
   int x = j ^ i;
   int previous;
@@ -48,7 +60,7 @@ inline double polya_urn_error(int j, int i, int num_bits) {
     previous = 0;
   }
   x >>= 1;
-  for(int i = 1; i < num_bits; i++) {
+  for(int i = 1; i < bit_rate; i++) {
     if(x & 1 == 1) {
       temp *= (POLYA_EPSILON + previous * POLYA_DELTA) / (1 + POLYA_DELTA);
       previous = 1;
@@ -74,23 +86,18 @@ void s_nnc(double* training_sequence, double* codebook, int levels, double* erro
   double min = __FLT_MAX__;
   int min_index = -1;
   double sum = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
       for(int j = 0; j < levels; j++) {
-        double y = error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]) - c;
-        double t = sum + y;
-        c = (t - sum) - y;
-        sum = t;
+        sum += error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
       if(sum < min) {
         min_index = l;
         min = sum;
       }
       sum=0;
-      c=0;
     }
     // For Centroid Condition
     cc_cardinality[min_index]++; // update count
@@ -100,29 +107,26 @@ void s_nnc(double* training_sequence, double* codebook, int levels, double* erro
     min = __FLT_MAX__;
   }
 }
-
+/**
+ * @brief Sequential Nearest Neighbour Condition
+ */
 void nnc(unsigned int* cells, double* training_sequence, double* codebook, int levels, double* error_matrix,
     double* cc_sums, unsigned int* cc_cardinality) {
   double min = __FLT_MAX__;
   int min_index = -1;
   double sum = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
       for(int j = 0; j < levels; j++) {
-        double y = error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]) - c;
-        double t = sum + y;
-        c = (t - sum) - y;
-        sum = t;
+        sum += error_matrix[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
       if(sum < min) {
         min_index = l;
         min = sum;
       }
       sum=0;
-      c=0;
     }
     cells[i] = min_index;
     // For Centroid Condition
@@ -134,6 +138,9 @@ void nnc(unsigned int* cells, double* training_sequence, double* codebook, int l
   }
 }
 
+/**
+ * @brief Sequential Centroid Condition
+ */
 void cc(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_cardinality, double* codebook) {
   double numerator = 0;
   double denominator = 0;
@@ -150,24 +157,21 @@ void cc(int levels, double* error_matrix, double* cc_sums, unsigned int* cc_card
   }
 }
 
+/**
+ * @brief Sequential distortion
+ */
 double distortion(unsigned int levels, double* training_sequence, double* error_matrix, double* codebook, unsigned int* cells) {
   double d = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     for(int j = 0; j < levels; j++) {
-      double y = error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
-      double t = d + y;
-      c = (t - d) - y;
-      d = t;
+      d += error_matrix[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]);
     }
   }
   return d / training_size;
 }
 
 /**
- * Splitting technique:
- * - A study of vector quantization for noisy channels, pg. 806 B.
- * - An Algorithm for Vector Quantizer Design pg. 89
+ * @brief Splitting technique
 */
 double* split(double* training_sequence, int levels, double* error_matrix,
     double* cc_cell_sums, unsigned int* cc_cell_cardinality) {
@@ -203,6 +207,9 @@ double* split(double* training_sequence, int levels, double* error_matrix,
   return codebook;
 }
 
+/**
+ * @brief Train COSQ
+ */
 void cosq(double* training_sequence) {
   int levels = 1 << rate;
   double dist_curr = 0, dist_prev = DBL_MAX;

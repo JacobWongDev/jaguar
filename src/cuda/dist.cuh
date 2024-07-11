@@ -1,8 +1,16 @@
 #include <cuda_device_runtime_api.h>
 
-/*
-  Each block handles <blockDim.x> number of sums.
-*/
+/**
+ * @brief 1st half of distortion calculation
+ *
+ * Each thread calculates summation of length <levels>. This is
+ * then reduced by distortion_reduce to a single value.
+ *
+ * Sums are stored in <intermediate>
+ *
+ * Kernel Requirements
+ * blockDim.x is a power of 2.
+ */
 __global__ void distortion_gather(unsigned int levels, double* training_sequence, double* q_points,
     double* ctm, unsigned int* cells, double* intermediate) {
   extern __shared__ double s_q_points[];

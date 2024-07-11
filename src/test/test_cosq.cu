@@ -268,23 +268,18 @@ void s_nnc_cpu(unsigned int training_size, double* training_sequence, double* co
   double min = __FLT_MAX__;
   int min_index = -1;
   double sum = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
       for(int j = 0; j < levels; j++) {
-        double y = ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]) - c;
-        double t = sum + y;
-        c = (t - sum) - y;
-        sum = t;
+        sum += ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
       if(sum < min) {
         min_index = l;
         min = sum;
       }
       sum=0;
-      c=0;
     }
     // For Centroid Condition
     cc_cardinality[min_index]++; // update count
@@ -300,16 +295,12 @@ void nnc_cpu(unsigned int training_size, unsigned int* cells, double* training_s
   double min = __FLT_MAX__;
   int min_index = -1;
   double sum = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     double target = training_sequence[i];
     for(int l = 0; l < levels; l++) {
       // Kahan summation
       for(int j = 0; j < levels; j++) {
-        double y = ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]) - c;
-        double t = sum + y;
-        c = (t - sum) - y;
-        sum = t;
+        sum += ctm[levels*l + j] * (target - codebook[j]) * (target - codebook[j]);
       }
       if(sum < min) {
         min_index = l;
@@ -317,7 +308,6 @@ void nnc_cpu(unsigned int training_size, unsigned int* cells, double* training_s
       }
       cell_sums[levels*i + l] = sum;
       sum=0;
-      c=0;
     }
     cells[i] = min_index;
     // For Centroid Condition
@@ -347,13 +337,9 @@ void cc_cpu(int levels, double* ctm, double* cc_sums, unsigned int* cc_cardinali
 
 double distortion_cpu(unsigned int training_size, unsigned int levels, double* training_sequence, double* ctm, double* codebook, unsigned int* cells) {
   double d = 0;
-  double c = 0;
   for(int i = 0; i < training_size; i++) {
     for(int j = 0; j < levels; j++) {
-      double y = ctm[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]) - c;
-      double t = d + y;
-      c = (t - d) - y;
-      d = t;
+      d += ctm[j + levels*cells[i]] * (training_sequence[i] - codebook[j]) * (training_sequence[i] - codebook[j]);
     }
   }
   return d / training_size;

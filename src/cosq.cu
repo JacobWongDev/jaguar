@@ -132,10 +132,10 @@ void Split::split_ge5() {
 }
 
 /**
- * Allocate memory for device arrays.
+ * @brief Allocate memory for device arrays.
  */
 Device::Device(COSQ* cosq) {
-  // Memory allocation
+  // CUDA Memory allocation
   checkCudaErrors(cudaMalloc((void **) &training_sequence, (cosq->training_size)*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &ctm, (cosq->levels)*(cosq->levels)*sizeof(double)));
   checkCudaErrors(cudaMalloc((void **) &q_points, (cosq->levels)*sizeof(double)));
@@ -178,7 +178,7 @@ Device::Device(COSQ* cosq) {
 }
 
 /**
- * Free all memory on device.
+ * @brief Free device memory.
  */
 Device::~Device() {
   checkCudaErrors(cudaFree(training_sequence));
@@ -190,9 +190,6 @@ Device::~Device() {
   checkCudaErrors(cudaFree(reduction_sums));
 }
 
-/**
- *
- */
 COSQ::COSQ(double* training_sequence, const unsigned int* training_size, const unsigned int* bit_rate) {
   this->bit_rate = *bit_rate;
   this->levels = 1 << *bit_rate;
@@ -212,10 +209,7 @@ COSQ::~COSQ() {
   delete device;
 }
 
-/**
- *
- */
-inline double polya_urn_error(int j, int i, int num_bits) {
+inline double polya_urn_error(int j, int i, int bit_rate) {
   double temp;
   int x = j ^ i;
   int previous;
@@ -227,7 +221,7 @@ inline double polya_urn_error(int j, int i, int num_bits) {
     previous = 0;
   }
   x >>= 1;
-  for(int i = 1; i < num_bits; i++) {
+  for(int i = 1; i < bit_rate; i++) {
     if(x & 1 == 1) {
       temp *= (POLYA_EPSILON + previous * POLYA_DELTA) / (1 + POLYA_DELTA);
       previous = 1;
@@ -241,7 +235,7 @@ inline double polya_urn_error(int j, int i, int num_bits) {
 }
 
 /**
- * Computes channel transition matrix p(j|i) where
+ * @brief Computes channel transition matrix p(j|i) where
  * i is the input symbol
  * j is the output symbol
  *
@@ -261,9 +255,6 @@ void compute_ctm(double* ctm, unsigned int levels, unsigned int rate) {
   }
 }
 
-/**
- *
- */
 void COSQ::cosq_lt5(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
@@ -293,9 +284,6 @@ void COSQ::cosq_lt5(double* target_q_points) {
   memcpy(target_q_points, q_points, sizeof(double) * levels);
 }
 
-/**
- *
- */
 void COSQ::cosq_ge5(double* target_q_points) {
   double dist_prev = DBL_MAX, dist_curr = 0;
   Split split(this, device);
@@ -326,9 +314,6 @@ void COSQ::cosq_ge5(double* target_q_points) {
   memcpy(target_q_points, q_points, sizeof(double) * levels);
 }
 
-/**
- *
- */
 void COSQ::train(double* target_q_points) {
   if(training_sequence == nullptr || training_size == 0) {
     spdlog::error("Failed to train COSQ: Invalid training sequence or size!");

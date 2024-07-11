@@ -6,9 +6,15 @@
 #define WARP_SIZE 32
 
 /**
- * Polya Urn Channel Model.
+ * @brief Polya Urn Channel Model. Returns probability
+ * of sending i and receiving j.
+ *
+ * @param j Received codebook index
+ * @param i Sent codebook index
+ * @param bit_rate bit rate for the quantizer
+ * @return probability
  */
-inline double polya_urn_error(int j, int i, int num_bits);
+inline double polya_urn_error(int j, int i, int bit_rate);
 
 /**
  * Compute the Channel Transition Matrix (ctm).
@@ -59,7 +65,15 @@ class Device {
 class Split {
     public:
         Split(COSQ* cosq, Device* device);
+        /**
+         * @brief Executes splitting technique for bit rates less than 5.
+         * COSQ::q_points will be written to.
+         */
         void split_lt5();
+        /**
+         * @brief Executes splitting technique for bit rates greater or equal to 5.
+         * COSQ::q_points will be written to.
+         */
         void split_ge5();
     private:
         static constexpr double delta = 0.001;
@@ -86,6 +100,9 @@ class COSQ {
     public:
         COSQ(double* training_sequence, const unsigned int* training_size, const unsigned int* bit_rate);
         ~COSQ();
+        /**
+         * @brief Run COSQ algorithm and return codebook to target_q_points.
+         */
         void train(double* target_q_points);
     private:
         Device* device;
@@ -95,6 +112,14 @@ class COSQ {
         unsigned int bit_rate;
         double* ctm;
         double* q_points;
+        /**
+         * @brief Executes COSQ algorithm for bit rates less than 5.
+         * target_q_points will be written to.
+         */
         void cosq_lt5(double* target_q_points);
+        /**
+         * @brief Executes COSQ algorithm for bit rates greater or equal to 5.
+         * target_q_points will be written to.
+         */
         void cosq_ge5(double* target_q_points);
 };

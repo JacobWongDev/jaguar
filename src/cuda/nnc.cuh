@@ -2,13 +2,20 @@
 #define FULL_MASK 0xffffffff
 
 /**
- * Nearest neighbour condition for levels >= 32 && < blockDim.x.
+ * @brief Nearest neighbour condition bit rates greater or equal to 5
  *
  * Each thread in the block calculates 1 summation for the NNC condition
  * A warp-level min reduction is performed across all warps, which is
  * then followed up by a final min reduction by a single warp.
  *
- * Since there are <levels> distinct summations, the warp-level reductions have to be organized
+ * Since there are <levels> distinct summations, the warp-level reductions have to be organized.
+ *
+ * Since the maximum bit rate is 10, the largest possible reduction
+ * size will be 2^10, and hence 2 iterations of warp reductions can
+ * reduce the sum (assuming each warp reduces 32 elements).
+ *
+ * Kernel Requirements
+ * levels >= 32 && levels < blockDim.x. blockDim.x is a power of 2.
  */
 __global__ void nnc_ge5(unsigned int levels, double* training_sequence, const double* ctm, double* q_points, unsigned int* cells) {
     extern __shared__ char smem[];
@@ -64,9 +71,18 @@ __global__ void nnc_ge5(unsigned int levels, double* training_sequence, const do
 }
 
 /**
- * Nearest neighbour condition for levels <= 16 && blockSize >= 32.
- * Since <levels> is less than 32, each warp has to handle at least two codebook elements.
- * Each block will calculate blockDim.x / levels number of training elements
+ * @brief Nearest neighbour condition bit rates less than 5.
+ *
+ * Since <levels> is less than 32, each warp has handles <blockDim.x / levels> codebook elements.
+ * A reduction is performed on each warp, where within the warp <blockDim.x / levels> sized reductions
+ * are performed.
+ *
+ * Since the maximum bit rate is 4, the largest possible reduction
+ * size will be 16, and hence multiple small reductions within the warp can
+ * reduce the sum (assuming each warp reduces 32 elements).
+ *
+ * Kernel Requirements
+ * levels <= 16 && blockDim.x >= 32. blockDim.x is a power of 2.
  */
 __global__ void nnc_lt5(unsigned int levels, double* training_sequence, double* q_points, double* ctm, unsigned int* cells) {
     unsigned int t = threadIdx.x;
